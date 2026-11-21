@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4" data-aos="fade-down">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div class="text-white">
+                <h2 class="fw-bold mb-0">Dashboard</h2>
+                <p style="opacity: 0.9;">Welcome back, {{ user.username }} ({{ user.get_role_display }})</p>
+            </div>
+            <div>
+                {% if user.role == 'DONOR' %}
+                    <a href="{% url 'donation_history' %}" class="btn btn-outline-light rounded-pill px-4 me-2"><i class="fa-solid fa-clock-rotate-left me-2"></i>My Donations</a>
+                    <a href="{% url 'create_donation' %}" class="btn btn-gradient rounded-pill px-4"><i class="fa-solid fa-plus me-2"></i>New Donation</a>
+                {% elif user.role == 'NGO' %}
+                    <a href="{% url 'ngo_reservations' %}" class="btn btn-outline-light rounded-pill px-4 me-2"><i class="fa-solid fa-list-check me-2"></i>My Reservations</a>
+                    <a href="{% url 'ngo_map_view' %}" class="btn btn-gradient rounded-pill px-4"><i class="fa-solid fa-map-location-dot me-2"></i>Find Food Nearby</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-5">
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+            <div class="glass-card text-center p-4">
+                <i class="fa-solid fa-bowl-food fs-1 text-primary mb-3"></i>
+                <h3 class="fw-bold mb-1">{{ total_donations }}</h3>
+                <p class="text-muted mb-0">Total Donations</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+            <div class="glass-card text-center p-4">
+                <i class="fa-solid fa-users fs-1 text-success mb-3"></i>
+                <h3 class="fw-bold mb-1">{{ people_fed }}</h3>
+                <p class="text-muted mb-0">People Fed</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+            <div class="glass-card text-center p-4">
+                <i class="fa-solid fa-leaf fs-1 text-success mb-3"></i>
+                <h3 class="fw-bold mb-1">{{ co2_reduced }} kg</h3>
+                <p class="text-muted mb-0">CO2 Reduced</p>
+            </div>
+        </div>
+        <div class="col-md-3" data-aos="fade-up" data-aos-delay="400">
+            <div class="glass-card text-center p-4">
+                <i class="fa-solid fa-chart-line fs-1 text-warning mb-3"></i>
+                <h3 class="fw-bold mb-1">Active</h3>
+                <p class="text-muted mb-0">Status</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AI Analytics Placeholder -->
+    <div class="row">
+        <div class="col-md-8" data-aos="fade-right">
+            <div class="glass-card h-100">
+                <h5 class="fw-bold mb-4">Donation Activity</h5>
+                <canvas id="activityChart" height="100"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4" data-aos="fade-left">
+            <div class="glass-card h-100 bg-gradient text-white" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
+                <h5 class="fw-bold mb-4">AI Insight</h5>
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fa-solid fa-robot fs-1 me-3"></i>
+                    <div>
+                        <p class="mb-0">Demand Forecast</p>
+                        <h4 class="fw-bold mb-0">High Demand</h4>
+                    </div>
+                </div>
+                <p class="mb-0" style="opacity: 0.9;">Our AI predicts a high demand for meals in your area this evening. Consider donating any excess food.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('activityChart');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Donations (kg)',
+                        data: [12, 19, 3, 5, 2, 3, 9],
+                        borderColor: '#10b981',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

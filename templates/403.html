@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Expired — FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center" data-aos="fade-up">
+            <div class="card border-0 shadow-sm rounded-4 p-5">
+                <i class="fa-solid fa-rotate-right fa-4x text-warning mb-4"></i>
+                <h2 class="fw-bold mb-2">Session Expired</h2>
+                <p class="text-muted mb-4">
+                    Your login session token has expired — this usually happens when you have multiple tabs open.<br>
+                    <strong>Click below to refresh and try again.</strong>
+                </p>
+                <a href="/users/login/" class="btn btn-gradient btn-lg rounded-pill px-5">
+                    <i class="fa-solid fa-arrow-rotate-right me-2"></i>Go to Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Auto-redirect to login after 3 seconds
+    setTimeout(function() {
+        window.location.href = '/users/login/';
+    }, 3000);
+</script>
+{% endblock %}

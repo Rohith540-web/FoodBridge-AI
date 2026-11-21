@@ -1,0 +1,8 @@
+from django.contrib import admin
+from .models import Delivery
+
+@admin.register(Delivery)
+class DeliveryAdmin(admin.ModelAdmin):
+    list_display = ('donation', 'volunteer', 'status', 'assigned_at')
+    list_filter = ('status',)
+    search_fields = ('donation__food_name', 'volunteer__username')

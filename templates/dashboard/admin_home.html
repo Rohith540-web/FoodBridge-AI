@@ -1,0 +1,134 @@
+{% extends 'dashboard/admin_base.html' %}
+
+{% block title %}Admin Dashboard - FoodBridge AI{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <div>
+        <h2 class="fw-bold mb-1">System Overview</h2>
+        <p class="text-muted">Welcome back, Admin. Here is the current platform status.</p>
+    </div>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-users fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Total Users</p>
+                    <h3 class="fw-bold mb-0">{{ total_users }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-route fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Live Deliveries</p>
+                    <h3 class="fw-bold mb-0">{{ live_deliveries }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-boxes-stacked fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Total Rescues</p>
+                    <h3 class="fw-bold mb-0">{{ total_rescues }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="400">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-dark text-white" style="background: linear-gradient(135deg, #1a1a1a, #2d3748);">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-brain fs-3"></i>
+                </div>
+                <div>
+                    <p class="small fw-semibold text-uppercase mb-1 text-white-50">AI Efficiency</p>
+                    <h3 class="fw-bold mb-0">{{ ai_efficiency }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8" data-aos="fade-up" data-aos-delay="500">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">Platform Quick Links</h5>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-4">
+                        <a href="{% url 'admin_users' %}" class="btn btn-light w-100 py-4 rounded-4 shadow-sm border text-start hover-lift">
+                            <i class="fa-solid fa-users-gear fs-2 text-primary mb-3"></i>
+                            <h6 class="fw-bold mb-1 text-dark">Manage Users</h6>
+                            <small class="text-muted d-block">Approve & Suspend</small>
+                        </a>
+                    </div>
+                    <div class="col-sm-4">
+                        <a href="{% url 'admin_deliveries' %}" class="btn btn-light w-100 py-4 rounded-4 shadow-sm border text-start hover-lift">
+                            <i class="fa-solid fa-map-location-dot fs-2 text-success mb-3"></i>
+                            <h6 class="fw-bold mb-1 text-dark">Live Map</h6>
+                            <small class="text-muted d-block">Track Volunteers</small>
+                        </a>
+                    </div>
+                    <div class="col-sm-4">
+                        <a href="{% url 'admin_analytics' %}" class="btn btn-light w-100 py-4 rounded-4 shadow-sm border text-start hover-lift">
+                            <i class="fa-solid fa-chart-line fs-2 text-warning mb-3"></i>
+                            <h6 class="fw-bold mb-1 text-dark">AI Analytics</h6>
+                            <small class="text-muted d-block">Platform Impact</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4" data-aos="fade-left" data-aos-delay="600">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
+            <div class="card-body p-4 p-md-5 text-center">
+                <i class="fa-solid fa-shield-check fs-1 mb-3"></i>
+                <h4 class="fw-bold mb-3">System Health</h4>
+                <p class="text-white-50 mb-4">All services are operating normally. Database connected. Routing APIs active.</p>
+                <span class="badge bg-white text-success rounded-pill px-4 py-2 fw-bold"><i class="fa-solid fa-circle text-success me-2 animation-pulse"></i>100% Uptime</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .animation-pulse {
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %}

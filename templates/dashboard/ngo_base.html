@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .sidebar {
+        min-height: calc(100vh - 76px); /* subtract navbar height */
+        background-color: var(--card-bg);
+        border-right: 1px solid rgba(0,0,0,0.05);
+        position: sticky;
+        top: 76px;
+    }
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        padding: 0.8rem 1.5rem;
+        color: var(--text-color);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border-radius: 0 50px 50px 0;
+        margin-right: 1rem;
+        margin-bottom: 0.2rem;
+    }
+    .sidebar-link i {
+        width: 24px;
+        margin-right: 10px;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+        background-color: rgba(16, 185, 129, 0.1); /* Primary color with opacity */
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row g-0 pt-5 mt-4">
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar d-none d-md-block pt-4 shadow-sm z-3">
+            <div class="mb-4 px-4 text-center">
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-building-ngo text-success fs-3"></i>
+                </div>
+                <h6 class="fw-bold mb-0 text-truncate">{{ user.username }}</h6>
+                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">NGO Account</small>
+            </div>
+            
+            <nav class="nav flex-column">
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'dashboard_home' %}active{% endif %}" href="{% url 'dashboard_home' %}">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'ngo_map_view' %}active{% endif %}" href="{% url 'ngo_map_view' %}">
+                    <i class="fa-solid fa-magnifying-glass-location"></i> Browse Food
+                </a>
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'ngo_reservations' %}active{% endif %}" href="{% url 'ngo_reservations' %}">
+                    <i class="fa-solid fa-list-check"></i> My Reservations
+                </a>
+                <a class="sidebar-link" href="{% url 'notification_list' %}">
+                    <i class="fa-solid fa-bell"></i> Notifications
+                </a>
+                <a class="sidebar-link" href="#">
+                    <i class="fa-solid fa-user-gear"></i> Profile
+                </a>
+                <form action="{% url 'logout' %}" method="post" class="mt-4">
+                    {% csrf_token %}
+                    <button type="submit" class="sidebar-link border-0 bg-transparent w-100 text-start text-danger">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                    </button>
+                </form>
+            </nav>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-10 bg-light pb-5" style="min-height: calc(100vh - 76px);">
+            <div class="p-4 p-md-5">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% block ngo_content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

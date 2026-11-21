@@ -1,0 +1,64 @@
+{% extends 'dashboard/admin_base.html' %}
+
+{% block title %}Manage Users - FoodBridge AI{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <h2 class="fw-bold mb-0">Manage Users</h2>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" data-aos="fade-up">
+    <div class="card-header bg-white border-bottom p-0">
+        <ul class="nav nav-tabs nav-fill" id="userTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active py-3 fw-bold text-dark border-0 border-bottom border-3 border-primary rounded-0" id="donors-tab" data-bs-toggle="tab" data-bs-target="#donors" type="button" role="tab"><i class="fa-solid fa-hand-holding-heart me-2 text-primary"></i>Donors ({{ donors.count }})</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold text-secondary border-0 border-bottom border-3 border-transparent rounded-0" id="ngos-tab" data-bs-toggle="tab" data-bs-target="#ngos" type="button" role="tab"><i class="fa-solid fa-building-ngo me-2 text-success"></i>NGOs ({{ ngos.count }})</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link py-3 fw-bold text-secondary border-0 border-bottom border-3 border-transparent rounded-0" id="volunteers-tab" data-bs-toggle="tab" data-bs-target="#volunteers" type="button" role="tab"><i class="fa-solid fa-motorcycle me-2 text-warning"></i>Volunteers ({{ volunteers.count }})</button>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="tab-content" id="userTabsContent">
+            
+            <!-- Donors Tab -->
+            <div class="tab-pane fade show active" id="donors" role="tabpanel">
+                {% include 'dashboard/partials/_user_table.html' with users=donors role_color='primary' %}
+            </div>
+            
+            <!-- NGOs Tab -->
+            <div class="tab-pane fade" id="ngos" role="tabpanel">
+                {% include 'dashboard/partials/_user_table.html' with users=ngos role_color='success' %}
+            </div>
+            
+            <!-- Volunteers Tab -->
+            <div class="tab-pane fade" id="volunteers" role="tabpanel">
+                {% include 'dashboard/partials/_user_table.html' with users=volunteers role_color='warning' %}
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script to toggle active tab styles
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.querySelectorAll('.nav-link').forEach(l => {
+                l.classList.remove('text-dark', 'border-primary');
+                l.classList.add('text-secondary', 'border-transparent');
+            });
+            this.classList.remove('text-secondary', 'border-transparent');
+            this.classList.add('text-dark', 'border-primary');
+        });
+    });
+</script>
+
+<style>
+    .border-transparent { border-color: transparent !important; }
+</style>
+{% endblock %}

@@ -1,0 +1,285 @@
+:root {
+    --primary-color: #10b981; /* Emerald Green */
+    --secondary-color: #3b82f6; /* Blue */
+    --gradient-start: #10b981;
+    --gradient-end: #3b82f6;
+    --bg-color: #f8fafc;
+    --text-color: #1e293b;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --card-bg: white;
+}
+
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --text-color: #f8fafc;
+    --glass-bg: rgba(15, 23, 42, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --card-bg: #1e293b;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #065f46 0%, #d4af37 50%, #064e3b 100%);
+    background-attachment: fixed;
+    color: var(--text-color);
+    padding-top: 76px; /* For fixed navbar */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.4) 0%, transparent 50%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Glassmorphism Navbar */
+.glass-nav {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.glass-nav .nav-link, .glass-nav .navbar-brand {
+    color: var(--text-color) !important;
+}
+
+.glass-nav .nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Gradients */
+.text-gradient {
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.btn-gradient {
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+    color: white;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-gradient:hover {
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Inputs */
+.form-control, .form-select {
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Helper utilities */
+.main-content {
+    flex-shrink: 0;
+}
+
+/* Custom card hover (used on landing & browse pages) */
+.custom-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.custom-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Dark mode card adjustments */
+[data-theme="dark"] .card,
+[data-theme="dark"] .glass-card {
+    background: var(--card-bg);
+    border-color: var(--glass-border);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .text-muted {
+    color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .bg-white {
+    background: var(--card-bg) !important;
+}
+
+[data-theme="dark"] .bg-light {
+    background: #1e293b !important;
+}
+
+[data-theme="dark"] .footer {
+    background: #0f172a !important;
+    color: #94a3b8;
+}
+
+/* ==========================================================================
+   Corner Navigation Controls (Previous Page & Come Back)
+   ========================================================================== */
+.corner-nav-group {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    z-index: 1060;
+    transition: all 0.25s ease;
+}
+
+[data-theme="dark"] .corner-nav-group {
+    background: rgba(15, 23, 42, 0.78);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.corner-nav-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] .corner-nav-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: #e2e8f0;
+}
+
+.corner-nav-btn:hover {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    color: #ffffff !important;
+    border-color: transparent;
+    transform: translateY(-1px) scale(1.08);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.corner-nav-btn:active {
+    transform: scale(0.92);
+}
+
+.corner-nav-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--glass-border);
+    opacity: 0.8;
+    margin: 0 2px;
+}
+
+@media (max-width: 991.98px) {
+    .corner-nav-group {
+        left: 12px;
+        padding: 3px 5px;
+    }
+    .corner-nav-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+    .navbar .navbar-brand {
+        margin-left: 86px;
+    }
+}
+
+/* ==========================================================================
+   Modal Backdrop Blur & Dialog Enhancements
+   ========================================================================== */
+.modal-backdrop {
+    backdrop-filter: blur(14px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+    background-color: rgba(6, 12, 24, 0.75) !important;
+    z-index: 1060 !important;
+}
+
+.modal-backdrop.show {
+    opacity: 1 !important;
+}
+
+.modal {
+    z-index: 1065 !important;
+}
+
+.qr-preview-card {
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+.qr-display-container {
+    background: #ffffff !important;
+    padding: 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: 2px solid rgba(16, 185, 129, 0.35);
+}
+
+

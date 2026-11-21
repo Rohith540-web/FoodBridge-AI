@@ -1,0 +1,124 @@
+{% extends 'dashboard/volunteer_base.html' %}
+
+{% block title %}Volunteer Dashboard - FoodBridge AI{% endblock %}
+
+{% block volunteer_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <h2 class="fw-bold mb-0">Volunteer Dashboard</h2>
+    <a href="{% url 'volunteer_deliveries' %}" class="btn btn-gradient rounded-pill px-4 shadow-sm"><i class="fa-solid fa-route me-2"></i>View Deliveries</a>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-box-open fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Completed</p>
+                    <h3 class="fw-bold mb-0">{{ completed_deliveries }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-motorcycle fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Active Deliveries</p>
+                    <h3 class="fw-bold mb-0">{{ active_deliveries }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-coins fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Reward Points</p>
+                    <h3 class="fw-bold mb-0">{{ reward_points }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="400">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-shield-heart fs-3"></i>
+                </div>
+                <div>
+                    <p class="small fw-semibold text-uppercase mb-1 text-white-50">Trust Score</p>
+                    <h3 class="fw-bold mb-0">{{ trust_score }}/100</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Active Delivery Highlight -->
+    <div class="col-md-12" data-aos="fade-up" data-aos-delay="500">
+        <h5 class="fw-bold mb-4">Current Assignment</h5>
+        {% if current_delivery %}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="row g-0">
+                <div class="col-md-4 bg-light d-flex align-items-center justify-content-center p-4 border-end">
+                    <div class="text-center">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fa-solid fa-map-location-dot fs-1"></i>
+                        </div>
+                        <h5 class="fw-bold">{{ current_delivery.donation.food_name }}</h5>
+                        <span class="badge bg-warning rounded-pill px-3">{{ current_delivery.get_status_display }}</span>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row mb-4">
+                            <div class="col-sm-6 mb-3 mb-sm-0">
+                                <p class="text-muted small text-uppercase fw-bold mb-1">Pickup From (Donor)</p>
+                                <p class="mb-0 fw-semibold"><i class="fa-solid fa-location-dot text-danger me-2"></i>{{ current_delivery.donation.pickup_location }}</p>
+                            </div>
+                            <div class="col-sm-6">
+                                <p class="text-muted small text-uppercase fw-bold mb-1">Deliver To (NGO)</p>
+                                <p class="mb-0 fw-semibold"><i class="fa-solid fa-location-dot text-success me-2"></i>NGO Center</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-3">
+                            <a href="{% url 'volunteer_navigation' current_delivery.id %}" class="btn btn-primary rounded-pill px-4"><i class="fa-solid fa-location-arrow me-2"></i>Start Navigation</a>
+                            
+                            {% if current_delivery.status == 'ASSIGNED' %}
+                                <a href="{% url 'pickup_qr_scanner' current_delivery.id %}" class="btn btn-outline-success rounded-pill px-4"><i class="fa-solid fa-camera me-2"></i>Scan Pickup QR</a>
+                            {% elif current_delivery.status == 'IN_TRANSIT' %}
+                                <a href="{% url 'delivery_qr_scanner' current_delivery.id %}" class="btn btn-gradient rounded-pill px-4"><i class="fa-solid fa-camera me-2"></i>Scan Delivery QR</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-5 text-center">
+                <i class="fa-solid fa-mug-hot fs-1 text-muted opacity-25 mb-3"></i>
+                <h5 class="fw-bold">No active deliveries</h5>
+                <p class="text-muted mb-4">You have no pending assignments. Check available deliveries to help out.</p>
+                <a href="{% url 'volunteer_deliveries' %}" class="btn btn-gradient rounded-pill px-5 shadow-sm">Find Deliveries</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center" data-aos="fade-up">
+        <div class="col-md-5">
+            <div class="glass-card mt-4">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Welcome Back</h2>
+                    <p class="text-muted">Sign in to continue to FoodBridge AI</p>
+                </div>
+                
+                <form method="post" autocomplete="on">
+                    {% csrf_token %}
+                    <!-- Refresh page on load if CSRF cookie is missing (handles stale tab issue) -->
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger shadow-sm rounded-3">
+                            <i class="fa-solid fa-circle-exclamation me-2"></i>Invalid email or password.
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email</label>
+                        {{ form.username }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Password</label>
+                        {{ form.password }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label text-muted small" for="rememberMe">Remember Me</label>
+                        </div>
+                        <a href="#" class="text-decoration-none fw-semibold small" style="color: var(--primary-color);">Forgot Password?</a>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-gradient btn-lg rounded-pill shadow-sm">Login</button>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-lg rounded-pill bg-white shadow-sm d-flex justify-content-center align-items-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" width="20" class="me-2">
+                            Continue with Google
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <p class="text-muted">Don't have an account? <a href="{% url 'register' %}" class="text-decoration-none fw-semibold" style="color: var(--primary-color);">Create one</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add form-control class to django forms
+    document.addEventListener("DOMContentLoaded", function() {
+        let inputs = document.querySelectorAll('input[type="text"], input[type="password"]');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Choose Your Role - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5" data-aos="fade-down">
+        <h2 class="fw-bold display-5">How would you like to join?</h2>
+        <p class="text-muted lead">Select the account type that best describes you or your organization.</p>
+    </div>
+    
+    <div class="row g-4 justify-content-center">
+        
+        <!-- Donor -->
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+            <a href="{% url 'register' %}?role=DONOR" class="text-decoration-none text-dark">
+                <div class="glass-card text-center h-100 hover-lift border-0">
+                    <i class="fa-solid fa-utensils fs-1 text-primary mb-4 mt-3"></i>
+                    <h4 class="fw-bold">Food Donor</h4>
+                    <p class="text-muted mb-4">Restaurants, Hotels, Supermarkets with surplus food to give.</p>
+                    <span class="btn btn-outline-primary rounded-pill w-100">Join as Donor</span>
+                </div>
+            </a>
+        </div>
+        
+        <!-- NGO -->
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'register' %}?role=NGO" class="text-decoration-none text-dark">
+                <div class="glass-card text-center h-100 hover-lift border-0">
+                    <i class="fa-solid fa-handshake-angle fs-1 text-success mb-4 mt-3"></i>
+                    <h4 class="fw-bold">NGO / Shelter</h4>
+                    <p class="text-muted mb-4">Organizations that need food to distribute to communities.</p>
+                    <span class="btn btn-outline-success rounded-pill w-100">Join as NGO</span>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Volunteer -->
+        <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+            <a href="{% url 'register' %}?role=VOLUNTEER" class="text-decoration-none text-dark">
+                <div class="glass-card text-center h-100 hover-lift border-0">
+                    <i class="fa-solid fa-truck-fast fs-1 text-info mb-4 mt-3"></i>
+                    <h4 class="fw-bold">Volunteer</h4>
+                    <p class="text-muted mb-4">Individuals willing to transport rescued food safely.</p>
+                    <span class="btn btn-outline-info rounded-pill w-100">Join as Volunteer</span>
+                </div>
+            </a>
+        </div>
+        
+    </div>
+    <div class="text-center mt-5">
+        <p class="text-muted">Already have an account? <a href="{% url 'login' %}" class="fw-bold" style="color: var(--primary-color);">Sign in here</a></p>
+    </div>
+</div>
+{% endblock %}

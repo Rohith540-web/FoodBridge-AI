@@ -1,0 +1,432 @@
+{% extends 'dashboard/ngo_base.html' %}
+{% load static %}
+
+{% block title %}Track Volunteer - FoodBridge AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tracking-map-container {
+        position: relative;
+        height: 560px;
+        width: 100%;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    #ngoTrackingMap {
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+    }
+    .map-hud-overlay {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        right: 16px;
+        z-index: 1000;
+        pointer-events: none;
+    }
+    .map-hud-card {
+        pointer-events: auto;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+    }
+    .map-controls-overlay {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        z-index: 1000;
+    }
+    .custom-map-pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 3px solid #ffffff;
+    }
+    .donor-pin {
+        background: #198754;
+        width: 38px;
+        height: 38px;
+    }
+    .ngo-pin {
+        background: #0d6efd;
+        width: 38px;
+        height: 38px;
+    }
+    .vol-pin {
+        background: #fd7e14;
+        width: 44px;
+        height: 44px;
+        position: relative;
+    }
+    .vol-pin::after {
+        content: '';
+        position: absolute;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        border: 2px solid #fd7e14;
+        opacity: 0.6;
+        animation: pin-pulse 1.8s infinite ease-out;
+    }
+    @keyframes pin-pulse {
+        0% { transform: scale(0.7); opacity: 0.9; }
+        100% { transform: scale(1.4); opacity: 0; }
+    }
+    .badge-live-pulse {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .badge-live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #20c997;
+        box-shadow: 0 0 8px #20c997;
+        animation: blink 1s infinite alternate;
+    }
+    @keyframes blink {
+        from { opacity: 0.4; }
+        to { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block ngo_content %}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2" data-aos="fade-down">
+    <div class="d-flex align-items-center">
+        <a href="{% url 'ngo_reservations' %}" class="btn btn-light rounded-circle me-3 shadow-sm"><i class="fa-solid fa-arrow-left"></i></a>
+        <div>
+            <h2 class="fw-bold mb-0">Track Volunteer: {{ donation.food_name }}</h2>
+            <small class="text-muted"><i class="fa-solid fa-location-dot me-1 text-danger"></i>Pickup: {{ donation.pickup_location }}</small>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary rounded-pill px-3 shadow-sm">
+            <i class="fa-solid fa-diamond-turn-right me-2"></i>Open in Google Maps
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Map Area -->
+    <div class="col-lg-8" data-aos="fade-up">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-body p-0">
+                <div class="tracking-map-container">
+                    <!-- Top HUD Bar -->
+                    <div class="map-hud-overlay">
+                        <div class="map-hud-card p-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="badge {% if donation.status == 'DELIVERED' %}bg-success{% else %}bg-primary{% endif %} rounded-pill px-3 py-2 badge-live-pulse">
+                                        <span class="badge-live-dot"></span>
+                                        {% if donation.status == 'DELIVERED' %}
+                                            DELIVERED TO NGO
+                                        {% elif donation.status == 'IN_TRANSIT' or donation.status == 'PICKED_UP' %}
+                                            IN TRANSIT TO YOUR FACILITY
+                                        {% else %}
+                                            VOLUNTEER ASSIGNED
+                                        {% endif %}
+                                    </span>
+                                    <div>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">ESTIMATED ARRIVAL</small>
+                                        <strong class="fs-5 text-dark" id="hudEta">{% if donation.status == 'DELIVERED' %}Delivered{% else %}10 mins{% endif %}</strong>
+                                    </div>
+                                    <div class="vr mx-1 d-none d-sm-block"></div>
+                                    <div class="d-none d-sm-block">
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">DISTANCE</small>
+                                        <strong class="text-dark" id="hudDistance">{% if donation.status == 'DELIVERED' %}0.0 km{% else %}3.1 km{% endif %}</strong>
+                                    </div>
+                                    <div class="vr mx-1 d-none d-md-block"></div>
+                                    <div class="d-none d-md-block">
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">LIVE GPS</small>
+                                        <small class="text-muted font-monospace" id="hudCoords">{{ vol_lat|floatformat:4 }}, {{ vol_lng|floatformat:4 }}</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="recenterMap()" title="Recenter Map">
+                                        <i class="fa-solid fa-crosshairs me-1"></i>Recenter
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" id="simToggleBtn" onclick="toggleSimulation()">
+                                        <i class="fa-solid fa-pause me-1"></i>Pause
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaflet Interactive Map -->
+                    <div id="ngoTrackingMap"></div>
+
+                    <!-- Bottom Right Map Controls -->
+                    <div class="map-controls-overlay">
+                        <a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-light btn-sm rounded-pill shadow-lg border">
+                            <i class="fa-brands fa-google text-danger me-1"></i>View Route in Google Maps
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tracking Info Sidebar -->
+    <div class="col-lg-4" data-aos="fade-left">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Delivery Status</h5>
+                
+                <div class="position-relative">
+                    <!-- Progress Line -->
+                    <div class="position-absolute bg-light" style="width: 2px; height: 100%; left: 14px; top: 0; z-index: 0;"></div>
+                    
+                    <!-- Step 1 -->
+                    <div class="d-flex mb-4 position-relative z-1">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 30px; height: 30px;">
+                            <i class="fa-solid fa-check small"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">1. Volunteer Assigned</h6>
+                            {% if delivery %}
+                                <p class="text-muted small mb-0">{{ delivery.assigned_at|date:"M d, H:i" }}</p>
+                                <span class="badge bg-light text-dark border rounded-pill mt-1">{{ vol_name }}</span>
+                            {% else %}
+                                <p class="text-muted small mb-0">Waiting for volunteer</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2 -->
+                    <div class="d-flex mb-4 position-relative z-1">
+                        <div class="{% if donation.status == 'IN_TRANSIT' or donation.status == 'DELIVERED' or donation.status == 'PICKED_UP' %}bg-success text-white{% else %}bg-light text-muted border{% endif %} rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 30px; height: 30px;">
+                            <i class="fa-solid {% if donation.status == 'IN_TRANSIT' or donation.status == 'DELIVERED' or donation.status == 'PICKED_UP' %}fa-check{% else %}fa-box{% endif %} small"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">2. Picked Up from Donor</h6>
+                            {% if donation.status == 'IN_TRANSIT' or donation.status == 'DELIVERED' or donation.status == 'PICKED_UP' %}
+                                <p class="text-muted small mb-0">{{ delivery.picked_up_at|date:"M d, H:i"|default:"Verified via QR Code" }}</p>
+                            {% else %}
+                                <p class="text-muted small mb-0">Pending pickup verification</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3 -->
+                    <div class="d-flex position-relative z-1">
+                        <div class="{% if donation.status == 'DELIVERED' %}bg-success text-white{% else %}bg-light text-muted border{% endif %} rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 30px; height: 30px;">
+                            <i class="fa-solid {% if donation.status == 'DELIVERED' %}fa-check{% else %}fa-flag-checkered{% endif %} small"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">3. Delivered to You</h6>
+                            {% if donation.status == 'DELIVERED' %}
+                                <p class="text-muted small mb-0">{{ delivery.delivered_at|date:"M d, H:i"|default:"Completed" }}</p>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mt-1">Received & Confirmed</span>
+                            {% else %}
+                                <p class="text-muted small mb-0">Destination: {{ ngo_name }}</p>
+                                <a href="{% url 'confirm_pickup' donation.id %}" class="btn btn-outline-success btn-sm rounded-pill mt-2">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Confirm Delivery Received
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if delivery %}
+        <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+            <div class="card-body p-4">
+                <h6 class="text-white-50 text-uppercase small fw-bold mb-3"><i class="fa-solid fa-id-badge me-2"></i>Assigned Volunteer</h6>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                        <i class="fa-solid fa-person-biking fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ delivery.volunteer.username }}</h5>
+                        <p class="small mb-0 text-white-50"><i class="fa-solid fa-star text-warning me-1"></i> 4.9 Verified Volunteer</p>
+                    </div>
+                </div>
+                
+                <hr class="border-white opacity-25">
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="small text-white-50 mb-0">Delivery Status</p>
+                        <h5 class="fw-bold mb-0">{{ delivery.get_status_display }}</h5>
+                    </div>
+                    {% if delivery.volunteer.phone_number %}
+                        <a href="tel:{{ delivery.volunteer.phone_number }}" class="btn btn-light btn-sm rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;" title="Call Volunteer">
+                            <i class="fa-solid fa-phone text-primary"></i>
+                        </a>
+                    {% else %}
+                        <span class="btn btn-light btn-sm rounded-circle shadow-sm d-flex align-items-center justify-content-center opacity-75" style="width: 40px; height: 40px;" title="Live On Task">
+                            <i class="fa-solid fa-satellite-dish text-primary"></i>
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning border-0 rounded-4 shadow-sm p-4">
+            <i class="fa-solid fa-circle-info fs-4 text-warning mb-2 d-block"></i>
+            <h6 class="fw-bold">Waiting for Volunteer</h6>
+            <p class="small text-muted mb-0">A volunteer will accept this delivery request shortly.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const DONOR_COORDS = [{{ donor_lat }}, {{ donor_lng }}];
+    const NGO_COORDS = [{{ ngo_lat }}, {{ ngo_lng }}];
+    const INITIAL_VOL_COORDS = [{{ vol_lat }}, {{ vol_lng }}];
+    const DONATION_STATUS = "{{ donation.status }}";
+    const FOOD_NAME = "{{ donation.food_name|escapejs }}";
+    const NGO_NAME = "{{ ngo_name|escapejs }}";
+    const VOL_NAME = "{{ vol_name|escapejs }}";
+
+    let map, donorMarker, ngoMarker, volMarker, routeLine;
+    let simInterval = null;
+    let isSimRunning = true;
+    let currentStep = 0;
+    const TOTAL_STEPS = 40;
+
+    function interpolate(p1, p2, t) {
+        return [
+            p1[0] + (p2[0] - p1[0]) * t,
+            p1[1] + (p2[1] - p1[1]) * t
+        ];
+    }
+
+    let waypoints = [];
+    if (DONATION_STATUS === 'DELIVERED') {
+        waypoints = [NGO_COORDS];
+    } else if (DONATION_STATUS === 'IN_TRANSIT' || DONATION_STATUS === 'PICKED_UP') {
+        for (let i = 0; i <= TOTAL_STEPS; i++) {
+            let t = i / TOTAL_STEPS;
+            waypoints.push(interpolate(DONOR_COORDS, NGO_COORDS, t));
+        }
+    } else {
+        for (let i = 0; i <= TOTAL_STEPS; i++) {
+            let t = i / TOTAL_STEPS;
+            waypoints.push(interpolate(INITIAL_VOL_COORDS, DONOR_COORDS, t));
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const centerCoords = (DONATION_STATUS === 'DELIVERED') ? NGO_COORDS : [
+            (DONOR_COORDS[0] + NGO_COORDS[0]) / 2,
+            (DONOR_COORDS[1] + NGO_COORDS[1]) / 2
+        ];
+
+        map = L.map('ngoTrackingMap', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView(centerCoords, 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap | FoodBridge AI Live GPS'
+        }).addTo(map);
+
+        const donorIcon = L.divIcon({
+            className: '',
+            html: '<div class="custom-map-pin donor-pin" title="Donor: ' + FOOD_NAME + '"><i class="fa-solid fa-utensils"></i></div>',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+
+        const ngoIcon = L.divIcon({
+            className: '',
+            html: '<div class="custom-map-pin ngo-pin" title="NGO: ' + NGO_NAME + '"><i class="fa-solid fa-hand-holding-heart"></i></div>',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+
+        const volIcon = L.divIcon({
+            className: '',
+            html: '<div class="custom-map-pin vol-pin" title="Volunteer: ' + VOL_NAME + '"><i class="fa-solid fa-person-biking"></i></div>',
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        });
+
+        donorMarker = L.marker(DONOR_COORDS, { icon: donorIcon }).addTo(map)
+            .bindPopup('<b>Donor (Pickup Location)</b><br>' + FOOD_NAME + '<br><small class="text-muted">{{ donation.pickup_location|escapejs }}</small>');
+
+        ngoMarker = L.marker(NGO_COORDS, { icon: ngoIcon }).addTo(map)
+            .bindPopup('<b>Your NGO Center</b><br>' + NGO_NAME);
+
+        routeLine = L.polyline([DONOR_COORDS, NGO_COORDS], {
+            color: '#0d6efd',
+            weight: 5,
+            opacity: 0.7,
+            dashArray: '8, 8',
+            lineJoin: 'round'
+        }).addTo(map);
+
+        const startPos = (DONATION_STATUS === 'DELIVERED') ? NGO_COORDS : waypoints[0];
+        volMarker = L.marker(startPos, { icon: volIcon }).addTo(map)
+            .bindPopup('<b>' + VOL_NAME + '</b><br>Live GPS Signal Active');
+
+        const bounds = L.latLngBounds([DONOR_COORDS, NGO_COORDS, startPos]);
+        map.fitBounds(bounds, { padding: [60, 60] });
+
+        if (DONATION_STATUS !== 'DELIVERED') {
+            startSimulation();
+        } else {
+            const btn = document.getElementById('simToggleBtn');
+            if (btn) btn.style.display = 'none';
+        }
+    });
+
+    function startSimulation() {
+        simInterval = setInterval(function () {
+            if (!isSimRunning || waypoints.length === 0) return;
+
+            currentStep = (currentStep + 1) % waypoints.length;
+            const currentPos = waypoints[currentStep];
+
+            volMarker.setLatLng(currentPos);
+
+            const remainingSteps = waypoints.length - currentStep;
+            const remainingKm = ((remainingSteps / waypoints.length) * 3.1).toFixed(1);
+            const remainingMin = Math.max(1, Math.round((remainingSteps / waypoints.length) * 12));
+
+            const hudEta = document.getElementById('hudEta');
+            const hudDist = document.getElementById('hudDistance');
+            const hudCoords = document.getElementById('hudCoords');
+
+            if (hudEta) hudEta.innerText = remainingMin + ' mins';
+            if (hudDist) hudDist.innerText = remainingKm + ' km';
+            if (hudCoords) hudCoords.innerText = currentPos[0].toFixed(4) + ', ' + currentPos[1].toFixed(4);
+
+        }, 1500);
+    }
+
+    function toggleSimulation() {
+        isSimRunning = !isSimRunning;
+        const btn = document.getElementById('simToggleBtn');
+        if (btn) {
+            btn.innerHTML = isSimRunning 
+                ? '<i class="fa-solid fa-pause me-1"></i>Pause' 
+                : '<i class="fa-solid fa-play me-1"></i>Resume';
+        }
+    }
+
+    function recenterMap() {
+        if (!map) return;
+        const currentPos = volMarker ? volMarker.getLatLng() : DONOR_COORDS;
+        const bounds = L.latLngBounds([DONOR_COORDS, NGO_COORDS, currentPos]);
+        map.fitBounds(bounds, { padding: [60, 60] });
+    }
+</script>
+{% endblock %}

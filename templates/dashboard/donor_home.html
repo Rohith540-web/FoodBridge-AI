@@ -1,0 +1,150 @@
+{% extends 'dashboard/donor_base.html' %}
+
+{% block title %}Donor Dashboard - FoodBridge AI{% endblock %}
+
+{% block donor_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <h2 class="fw-bold mb-0">Dashboard Overview</h2>
+    <a href="{% url 'create_donation' %}" class="btn btn-gradient rounded-pill px-4 shadow-sm"><i class="fa-solid fa-plus me-2"></i>Donate Food</a>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="100">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-boxes-stacked fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Total Donations</p>
+                    <h3 class="fw-bold mb-0">{{ total_donations }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="200">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-hourglass-half fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Pending Requests</p>
+                    <h3 class="fw-bold mb-0">{{ pending_requests }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="300">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-check-double fs-3"></i>
+                </div>
+                <div>
+                    <p class="text-muted small fw-semibold text-uppercase mb-1">Completed Donations</p>
+                    <h3 class="fw-bold mb-0">{{ completed_donations }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3" data-aos="fade-up" data-aos-delay="400">
+        <div class="card border-0 shadow-sm rounded-4 h-100 bg-gradient text-white" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                    <i class="fa-solid fa-robot fs-3"></i>
+                </div>
+                <div>
+                    <p class="small fw-semibold text-uppercase mb-1 text-white-50">Avg AI Score</p>
+                    <h3 class="fw-bold mb-0">{{ avg_ai_score|default:"0.0"|floatformat:1 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Recent Activity -->
+    <div class="col-md-8" data-aos="fade-up" data-aos-delay="500">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">Recent Activity</h5>
+                    <a href="{% url 'donation_history' %}" class="btn btn-sm btn-outline-secondary rounded-pill">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle">
+                        <thead class="text-muted small text-uppercase bg-light">
+                            <tr>
+                                <th class="rounded-start ps-3 py-2">Food Item</th>
+                                <th class="py-2">Date</th>
+                                <th class="py-2">Status</th>
+                                <th class="rounded-end pe-3 py-2 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for donation in recent_donations %}
+                            <tr class="border-bottom">
+                                <td class="ps-3 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <i class="fa-solid fa-bowl-food"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-semibold">{{ donation.food_name }}</h6>
+                                            <small class="text-muted">{{ donation.quantity }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 text-muted">{{ donation.created_at|date:"M d, Y" }}</td>
+                                <td class="py-3">
+                                    <span class="badge {% if donation.status == 'AVAILABLE' %}bg-warning{% elif donation.status == 'DELIVERED' %}bg-success{% else %}bg-info{% endif %} rounded-pill px-2">
+                                        {{ donation.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="pe-3 py-3 text-end">
+                                    <a href="{% url 'food_details' donation.id %}" class="btn btn-sm btn-light rounded-circle text-primary"><i class="fa-solid fa-arrow-right"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No recent activity.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Next Pickup -->
+    <div class="col-md-4" data-aos="fade-up" data-aos-delay="600">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4">Upcoming Pickups</h5>
+                {% if upcoming_pickup %}
+                <div class="bg-light rounded-4 p-3 mb-3 border-start border-primary border-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold mb-0">{{ upcoming_pickup.food_name }}</h6>
+                        <span class="badge bg-primary rounded-pill">Today</span>
+                    </div>
+                    <p class="text-muted small mb-2"><i class="fa-regular fa-clock me-1"></i> By {{ upcoming_pickup.pickup_deadline|time:"H:i" }}</p>
+                    <p class="text-muted small mb-3 text-truncate"><i class="fa-solid fa-location-dot me-1"></i> {{ upcoming_pickup.pickup_location }}</p>
+                    <a href="{% url 'track_volunteer' upcoming_pickup.id %}" class="btn btn-sm btn-outline-primary w-100 rounded-pill">Track Volunteer</a>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fa-solid fa-box-open fs-1 text-muted opacity-50 mb-3"></i>
+                    <p class="text-muted mb-0">No pickups scheduled.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

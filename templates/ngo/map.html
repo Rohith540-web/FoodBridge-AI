@@ -1,0 +1,108 @@
+{% extends 'dashboard/ngo_base.html' %}
+
+{% block title %}Find Food - FoodBridge AI{% endblock %}
+
+{% block ngo_content %}
+<div class="container-fluid py-4" style="height: calc(100vh - 120px);">
+    <div class="row h-100">
+        <!-- Sidebar -->
+        <div class="col-md-4 h-100 overflow-auto pe-4" data-aos="fade-right">
+            <h3 class="fw-bold mb-4">Nearby Donations</h3>
+            
+            {% for donation in donations %}
+            <div class="glass-card mb-4 p-3 donation-card" data-lat="{{ donation.donor.latitude|default:'12.9780' }}" data-lng="{{ donation.donor.longitude|default:'77.6400' }}" data-id="{{ donation.id }}">
+                <div class="d-flex justify-content-between">
+                    <h5 class="fw-bold text-primary mb-1">{{ donation.food_name }}</h5>
+                    <span class="badge bg-success">{{ donation.quantity }}</span>
+                </div>
+                <p class="text-muted small mb-2"><i class="fa-solid fa-location-dot me-1 text-danger"></i> {{ donation.pickup_location }}</p>
+                <p class="small mb-3"><strong>Pickup by:</strong> {{ donation.pickup_deadline|date:"M d, H:i" }}</p>
+                
+                <div class="d-flex gap-2">
+                    <form action="{% url 'reserve_donation' donation.id %}" method="post" class="flex-grow-1">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm w-100 rounded-pill">Reserve Food</button>
+                    </form>
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ donation.donor.latitude|default:'12.9780' }},{{ donation.donor.longitude|default:'77.6400' }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 31px; height: 31px;" title="View on Google Maps">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="fa-solid fa-face-frown-open fs-1 text-muted mb-3"></i>
+                <h5>No food available nearby</h5>
+                <p class="text-muted">Check back later or expand your search area.</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Map -->
+        <div class="col-md-8 h-100" data-aos="fade-left">
+            <div class="glass-card p-0 h-100 overflow-hidden" style="border-radius: 20px;">
+                <div id="map" style="height: 100%; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ngoLat = {{ ngo_lat|default:'12.9716' }};
+        const ngoLng = {{ ngo_lng|default:'77.5946' }};
+        
+        // Initialize Map centered on NGO location
+        var map = L.map('map').setView([ngoLat, ngoLng], 12);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap | FoodBridge AI Food Finder'
+        }).addTo(map);
+
+        // Add NGO home marker
+        const ngoMarker = L.circleMarker([ngoLat, ngoLng], {
+            radius: 9,
+            fillColor: '#0d6efd',
+            color: '#ffffff',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.9
+        }).addTo(map).bindPopup('<b>Your NGO Location</b>');
+        
+        const cards = document.querySelectorAll('.donation-card');
+        const latLngs = [[ngoLat, ngoLng]];
+
+        cards.forEach((card, index) => {
+            let lat = parseFloat(card.getAttribute('data-lat'));
+            let lng = parseFloat(card.getAttribute('data-lng'));
+            let title = card.querySelector('h5').innerText;
+            let qty = card.querySelector('.badge').innerText;
+            
+            // Add jitter if duplicate coordinates
+            lat = lat + (Math.sin(index + 1) * 0.008);
+            lng = lng + (Math.cos(index + 1) * 0.008);
+            latLngs.push([lat, lng]);
+            
+            let marker = L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: '#198754',
+                color: '#ffffff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.9
+            }).addTo(map).bindPopup(`<b>${title}</b><br><span class="badge bg-success">${qty}</span><br>Available for rescue.`);
+                
+            card.addEventListener('mouseenter', () => {
+                marker.openPopup();
+                map.setView([lat, lng], 14, {animate: true});
+            });
+        });
+
+        if (latLngs.length > 1) {
+            map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
+        }
+    });
+</script>
+{% endblock %}

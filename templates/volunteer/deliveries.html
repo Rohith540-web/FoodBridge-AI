@@ -1,0 +1,145 @@
+{% extends 'dashboard/volunteer_base.html' %}
+{% load static %}
+
+{% block title %}My Deliveries - FoodBridge AI{% endblock %}
+
+{% block volunteer_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <h2 class="fw-bold mb-0">My Deliveries</h2>
+</div>
+
+<div class="row g-4 mb-5" data-aos="fade-up">
+    <div class="col-12">
+        <h4 class="fw-bold mb-3">Available for Pickup</h4>
+        <div class="row g-4">
+            {% for reservation in pending_reservations %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm custom-card overflow-hidden rounded-4">
+                    <div class="bg-warning bg-opacity-10 p-3 d-flex justify-content-between align-items-center border-bottom border-warning border-opacity-25">
+                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Waiting for Pickup</span>
+                        <span class="fw-bold text-primary">{{ reservation.donation.quantity }}</span>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">{{ reservation.donation.food_name }}</h5>
+                        
+                        <div class="mb-4">
+                            <p class="text-muted small mb-2"><i class="fa-solid fa-shop text-danger me-2"></i><strong>From:</strong> {{ reservation.donation.pickup_location }}</p>
+                            <p class="text-muted small mb-0 text-truncate"><i class="fa-solid fa-building-ngo text-success me-2"></i><strong>To:</strong> {{ reservation.ngo.username }}</p>
+                        </div>
+                        
+                        <form action="{% url 'accept_delivery' reservation.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-gradient btn-sm w-100 rounded-pill shadow-sm">Accept Delivery</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center text-muted p-5 bg-white rounded-4 shadow-sm border border-light">
+                <i class="fa-solid fa-check-circle fs-1 mb-3 text-success opacity-75"></i>
+                <h5 class="fw-bold">All caught up!</h5>
+                <p class="mb-0">There are no pending reservations waiting for a volunteer right now.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4" data-aos="fade-up" data-aos-delay="100">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">My Assignments</h4>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active" onclick="filterDeliveries('ALL', this)">All</button>
+                <button type="button" class="btn btn-outline-warning" onclick="filterDeliveries('ACTIVE', this)">In Progress</button>
+                <button type="button" class="btn btn-outline-success" onclick="filterDeliveries('DELIVERED', this)"><i class="fa-solid fa-circle-check me-1"></i>Completed Delivered</button>
+            </div>
+        </div>
+        
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-borderless table-hover align-middle mb-0" id="assignmentsTable">
+                    <thead class="bg-light text-muted small text-uppercase">
+                        <tr>
+                            <th class="ps-4 py-3">Food Item</th>
+                            <th class="py-3">Locations</th>
+                            <th class="py-3">Status</th>
+                            <th class="pe-4 py-3 text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for delivery in deliveries %}
+                        <tr class="border-bottom delivery-row" data-status="{{ delivery.status }}">
+                            <td class="ps-4 py-3">
+                                <h6 class="fw-bold mb-1">{{ delivery.donation.food_name }}</h6>
+                                <small class="text-muted">{{ delivery.donation.quantity }}</small>
+                            </td>
+                            <td class="py-3">
+                                <div class="small mb-1"><span class="text-muted">From:</span> {{ delivery.donation.pickup_location|truncatechars:20 }}</div>
+                                <div class="small"><span class="text-muted">To:</span> NGO Center</div>
+                            </td>
+                            <td class="py-3">
+                                <span class="badge {% if delivery.status == 'ASSIGNED' %}bg-secondary{% elif delivery.status == 'IN_TRANSIT' %}bg-info text-dark{% elif delivery.status == 'DELIVERED' %}bg-success{% endif %} rounded-pill px-3 py-2">
+                                    {{ delivery.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="pe-4 py-3 text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    {% if delivery.status != 'DELIVERED' %}
+                                    <a href="{% url 'volunteer_navigation' delivery.id %}" class="btn btn-sm btn-outline-primary rounded-pill"><i class="fa-solid fa-location-arrow me-1"></i> Nav</a>
+                                    {% endif %}
+                                    
+                                    {% if delivery.status == 'ASSIGNED' %}
+                                        <a href="{% url 'pickup_qr_scanner' delivery.id %}" class="btn btn-sm btn-gradient rounded-pill"><i class="fa-solid fa-qrcode me-1"></i> Scan Pickup</a>
+                                    {% elif delivery.status == 'IN_TRANSIT' %}
+                                        <a href="{% url 'delivery_qr_scanner' delivery.id %}" class="btn btn-sm btn-success rounded-pill"><i class="fa-solid fa-qrcode me-1"></i> Scan Delivery</a>
+                                    {% else %}
+                                        <a href="{% url 'delivery_success' delivery.id %}" class="btn btn-sm btn-outline-success rounded-pill shadow-sm"><i class="fa-solid fa-award me-1"></i> View Certificate</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-5">
+                                <i class="fa-solid fa-box-open fs-2 mb-3 opacity-50"></i>
+                                <p class="mb-0">You have no active or past deliveries.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterDeliveries(filter, btn) {
+    document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    document.querySelectorAll('.delivery-row').forEach(row => {
+        let status = row.getAttribute('data-status');
+        if (filter === 'ALL') {
+            row.style.display = '';
+        } else if (filter === 'ACTIVE') {
+            row.style.display = (status === 'ASSIGNED' || status === 'IN_TRANSIT') ? '' : 'none';
+        } else if (filter === 'DELIVERED') {
+            row.style.display = (status === 'DELIVERED') ? '' : 'none';
+        }
+    });
+}
+</script>
+
+<style>
+    .custom-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .custom-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+</style>
+{% endblock %}

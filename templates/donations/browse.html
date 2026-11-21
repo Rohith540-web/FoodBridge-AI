@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Browse Food - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Browse Available Food</h2>
+    </div>
+    
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Filters</h5>
+                    <form method="GET" action="{% url 'browse_food' %}">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Category</label>
+                            <input type="text" name="category" class="form-control rounded-pill" placeholder="e.g. Rice, Bread" value="{{ request.GET.category }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Distance (Coming soon)</label>
+                            <input type="range" class="form-range" min="1" max="50" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Type</label>
+                            <select class="form-select rounded-pill" disabled>
+                                <option>Any</option>
+                                <option>Veg</option>
+                                <option>Non-Veg</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted small">AI Priority</label>
+                            <select class="form-select rounded-pill" disabled>
+                                <option>Any</option>
+                                <option>High</option>
+                                <option>Medium</option>
+                                <option>Low</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-gradient w-100 rounded-pill">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Food List -->
+        <div class="col-md-9">
+            <div class="row g-4">
+                {% for donation in donations %}
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm custom-card rounded-4 overflow-hidden">
+                        {% if donation.image %}
+                        <img src="{{ donation.image.url }}" class="card-img-top" alt="{{ donation.food_name }}" style="height: 180px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top d-flex align-items-center justify-content-center bg-secondary bg-opacity-10" style="height: 180px;">
+                            <i class="fa-solid fa-utensils fs-1 text-secondary opacity-50"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title fw-bold mb-0 text-truncate" style="max-width: 75%;">{{ donation.food_name }}</h6>
+                                <span class="badge bg-success rounded-pill px-2" style="font-size: 0.7rem;">AI: {{ donation.demand_score|default:"N/A"|floatformat:1 }}</span>
+                            </div>
+                            <p class="text-muted small mb-1"><i class="fa-solid fa-box text-primary me-2"></i>{{ donation.quantity }}</p>
+                            <p class="text-muted small mb-1"><i class="fa-solid fa-tag text-primary me-2"></i>{{ donation.category }}</p>
+                            <p class="text-muted small mb-3"><i class="fa-solid fa-clock text-primary me-2"></i>{{ donation.pickup_deadline|time:"H:i" }}</p>
+                            
+                            <a href="{% url 'food_details' donation.id %}" class="btn btn-outline-primary w-100 rounded-pill btn-sm">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted lead">No donations found matching your criteria.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .custom-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .custom-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

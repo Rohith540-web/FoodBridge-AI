@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ donation.food_name }} - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="mb-4">
+        <a href="{% url 'browse_food' %}" class="text-decoration-none text-muted"><i class="fa-solid fa-arrow-left me-2"></i>Back to Browse</a>
+    </div>
+    
+    <div class="row g-5">
+        <div class="col-md-6">
+            {% if donation.image %}
+            <img src="{{ donation.image.url }}" class="img-fluid rounded-4 shadow-sm w-100" style="object-fit: cover; max-height: 400px;" alt="{{ donation.food_name }}">
+            {% else %}
+            <div class="d-flex align-items-center justify-content-center bg-light rounded-4 shadow-sm w-100" style="height: 400px;">
+                <i class="fa-solid fa-utensils text-secondary opacity-50" style="font-size: 5rem;"></i>
+            </div>
+            {% endif %}
+            
+            <div class="mt-4 p-4 bg-light rounded-4 shadow-sm">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Pickup Location</h5>
+                <p class="text-muted mb-3">{{ donation.pickup_location }}</p>
+                <!-- Placeholder for Google Map -->
+                <div class="bg-secondary bg-opacity-25 rounded-3 d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <span class="text-muted"><i class="fa-solid fa-map me-2"></i>Google Maps Integration</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h2 class="fw-bold mb-0 text-gradient">{{ donation.food_name }}</h2>
+                <span class="badge bg-success rounded-pill px-3 py-2 fs-6 shadow-sm">AI Priority: {{ donation.demand_score|default:"N/A"|floatformat:1 }}</span>
+            </div>
+            
+            <p class="lead text-muted mb-4">{{ donation.category }}</p>
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">Donation Details</h5>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <p class="text-muted small mb-1">Donor Name</p>
+                            <p class="fw-medium mb-0"><i class="fa-solid fa-user text-primary me-2"></i>{{ donation.donor.username }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted small mb-1">Quantity</p>
+                            <p class="fw-medium mb-0"><i class="fa-solid fa-box text-primary me-2"></i>{{ donation.quantity }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted small mb-1">Prepared At</p>
+                            <p class="fw-medium mb-0"><i class="fa-solid fa-clock text-primary me-2"></i>{{ donation.preparation_time|date:"M d, H:i" }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted small mb-1">Pickup Deadline</p>
+                            <p class="fw-medium mb-0 text-danger"><i class="fa-solid fa-hourglass-end me-2"></i>{{ donation.pickup_deadline|date:"M d, H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-2">Description</h5>
+                    <p class="text-muted">{{ donation.description|default:"No additional description provided." }}</p>
+                    
+                    {% if donation.special_instructions %}
+                    <h5 class="fw-bold mt-4 mb-2">Special Instructions</h5>
+                    <p class="text-muted mb-0">{{ donation.special_instructions }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if donation.qr_code %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 text-center p-4">
+                <h5 class="fw-bold mb-1"><i class="fa-solid fa-qrcode text-primary me-2"></i>Pickup Verification QR</h5>
+                <p class="text-muted small mb-3">Scan this QR code during pickup to verify and transfer food.</p>
+                <div class="bg-white p-2 d-inline-block rounded-3 border shadow-sm mx-auto mb-3">
+                    <img src="{{ donation.qr_code.url }}" alt="QR Code" class="img-fluid rounded" style="width: 180px; height: 180px; object-fit: contain;">
+                </div>
+                <div>
+                    <a href="{{ donation.qr_code.url }}" download="QR_{{ donation.food_name }}.png" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                        <i class="fa-solid fa-download me-2"></i>Download QR Code
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Reserve Action -->
+            <div class="d-grid gap-2">
+                {% if user.is_authenticated and user.role == 'NGO' %}
+                <form action="{% url 'reserve_donation' donation.id %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-gradient btn-lg w-100 rounded-pill shadow-sm">Reserve This Food</button>
+                </form>
+                {% elif not user.is_authenticated %}
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-primary btn-lg rounded-pill shadow-sm">Login to Reserve</a>
+                {% else %}
+                <button class="btn btn-secondary btn-lg rounded-pill shadow-sm" disabled>Only NGOs can reserve</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

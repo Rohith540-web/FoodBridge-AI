@@ -1,0 +1,104 @@
+{% extends 'dashboard/ngo_base.html' %}
+
+{% block title %}My Reservations - FoodBridge AI{% endblock %}
+
+{% block ngo_content %}
+<div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+    <div>
+        <h2 class="fw-bold mb-1">My Reservations</h2>
+        <p class="text-muted small mb-0">Track and manage all reserved and completed food rescues</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <div class="btn-group btn-group-sm me-2" role="group">
+            <button type="button" class="btn btn-outline-secondary active" onclick="filterReservations('ALL', this)">All</button>
+            <button type="button" class="btn btn-outline-warning" onclick="filterReservations('ACTIVE', this)">Active</button>
+            <button type="button" class="btn btn-outline-success" onclick="filterReservations('DELIVERED', this)"><i class="fa-solid fa-circle-check me-1"></i>Delivered</button>
+        </div>
+        <a href="{% url 'ngo_map_view' %}" class="btn btn-gradient rounded-pill px-4 shadow-sm"><i class="fa-solid fa-magnifying-glass-location me-2"></i>Find More Food</a>
+    </div>
+</div>
+
+<div class="row g-4" id="reservationsGrid">
+    {% for reservation in reservations %}
+    <div class="col-md-6 col-lg-4 reservation-card" data-status="{{ reservation.donation.status }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
+        <div class="card h-100 border-0 shadow-sm custom-card overflow-hidden rounded-4">
+            {% if reservation.donation.image %}
+                <div style="height: 180px; position: relative;">
+                    <img src="{{ reservation.donation.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ reservation.donation.food_name }}">
+                    <span class="badge {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}bg-warning{% elif reservation.donation.status == 'PICKED_UP' %}bg-info text-dark{% elif reservation.donation.status == 'DELIVERED' %}bg-success{% else %}bg-secondary{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ reservation.donation.get_status_display }}</span>
+                </div>
+            {% else %}
+                <div class="bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 180px; position: relative;">
+                    <i class="fa-solid fa-utensils fs-1 text-muted opacity-50"></i>
+                    <span class="badge {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}bg-warning{% elif reservation.donation.status == 'PICKED_UP' %}bg-info text-dark{% elif reservation.donation.status == 'DELIVERED' %}bg-success{% else %}bg-secondary{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ reservation.donation.get_status_display }}</span>
+                </div>
+            {% endif %}
+            
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3 text-truncate">{{ reservation.donation.food_name }}</h5>
+                <p class="text-muted small mb-2"><i class="fa-solid fa-box text-primary me-2"></i>{{ reservation.donation.quantity }}</p>
+                <p class="text-muted small mb-2"><i class="fa-solid fa-clock text-primary me-2"></i>Reserved At: {{ reservation.reserved_at|date:"M d, H:i" }}</p>
+                <p class="text-muted small mb-4 text-truncate"><i class="fa-solid fa-location-dot text-primary me-2"></i>{{ reservation.donation.pickup_location }}</p>
+                
+                <div class="d-grid gap-2">
+                    {% if reservation.donation.status == 'DELIVERED' %}
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 flex-fill d-flex align-items-center justify-content-center fw-semibold">
+                                <i class="fa-solid fa-check-double me-1"></i> Delivered
+                            </span>
+                            <a href="{% url 'ngo_track_volunteer' reservation.donation.id %}" class="btn btn-outline-success btn-sm rounded-pill flex-fill">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Timeline
+                            </a>
+                        </div>
+                    {% elif reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' or reservation.donation.status == 'IN_TRANSIT' or reservation.donation.status == 'PICKED_UP' %}
+                        <a href="{% url 'ngo_track_volunteer' reservation.donation.id %}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fa-solid fa-map-location-dot me-2"></i>Track Volunteer</a>
+                        <a href="{% url 'ngo_qr_scanner' reservation.donation.id %}" class="btn btn-gradient btn-sm rounded-pill"><i class="fa-solid fa-qrcode me-2"></i>QR Verification</a>
+                    {% else %}
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Waiting for Volunteer</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <div class="p-5 bg-white rounded-4 shadow-sm">
+            <div class="bg-light text-muted rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px;">
+                <i class="fa-solid fa-list-check fs-1"></i>
+            </div>
+            <h4 class="fw-bold">No reservations yet</h4>
+            <p class="text-muted">Browse available food nearby and make your first reservation.</p>
+            <a href="{% url 'ngo_map_view' %}" class="btn btn-gradient rounded-pill px-5 py-2 mt-3 shadow-sm">Browse Food</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function filterReservations(filter, btn) {
+    document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    document.querySelectorAll('.reservation-card').forEach(card => {
+        let status = card.getAttribute('data-status');
+        if (filter === 'ALL') {
+            card.style.display = '';
+        } else if (filter === 'ACTIVE') {
+            card.style.display = (status !== 'DELIVERED') ? '' : 'none';
+        } else if (filter === 'DELIVERED') {
+            card.style.display = (status === 'DELIVERED') ? '' : 'none';
+        }
+    });
+}
+</script>
+
+<style>
+    .custom-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .custom-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

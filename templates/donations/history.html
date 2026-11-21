@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Donation History - FoodBridge AI{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+        <h2 class="fw-bold">My Donations</h2>
+        <a href="{% url 'create_donation' %}" class="btn btn-gradient rounded-pill px-4">New Donation</a>
+    </div>
+
+    <div class="row g-4">
+        {% for donation in donations %}
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
+            <div class="glass-card h-100 p-0 overflow-hidden">
+                {% if donation.image %}
+                    <div style="height: 200px; overflow: hidden; position: relative;">
+                        <img src="{{ donation.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ donation.food_name }}">
+                        <span class="badge bg-success position-absolute top-0 end-0 m-3">{{ donation.get_status_display }}</span>
+                    </div>
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative;">
+                        <i class="fa-solid fa-utensils fs-1 text-muted"></i>
+                        <span class="badge bg-success position-absolute top-0 end-0 m-3">{{ donation.get_status_display }}</span>
+                    </div>
+                {% endif %}
+                <div class="p-4">
+                    <h5 class="fw-bold">{{ donation.food_name }}</h5>
+                    <p class="text-muted small mb-2"><i class="fa-solid fa-clock me-1"></i> Pickup By: {{ donation.pickup_deadline|date:"M d, Y H:i" }}</p>
+                    <p class="text-muted small mb-3"><i class="fa-solid fa-location-dot me-1"></i> {{ donation.pickup_location|truncatechars:30 }}</p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-primary">{{ donation.quantity }}</span>
+                        {% if donation.qr_code %}
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-toggle="modal" data-bs-target="#qrModal{{ donation.id }}">View QR</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- QR Code Modal -->
+            {% if donation.qr_code %}
+            <div class="modal fade" id="qrModal{{ donation.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-sm">
+                    <div class="modal-content glass-card border-0">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold">Scan for Pickup</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center pt-2">
+                            <img src="{{ donation.qr_code.url }}" class="img-fluid rounded shadow-sm mb-3" alt="QR Code">
+                            <p class="small text-muted mb-0">Show this code to the volunteer when they arrive to pick up the {{ donation.food_name }}.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="glass-card p-5">
+                <i class="fa-solid fa-box-open fs-1 text-muted mb-3"></i>
+                <h4>No donations yet</h4>
+                <p class="text-muted">Start rescuing food by making your first donation today.</p>
+                <a href="{% url 'create_donation' %}" class="btn btn-gradient rounded-pill px-4 mt-3">Make a Donation</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
