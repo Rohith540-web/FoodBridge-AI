@@ -4,17 +4,21 @@
 
 {% block extra_css %}
 <style>
+    .password-input-group {
+        position: relative;
+    }
     .toggle-password-btn {
         border-color: #dee2e6;
-        background-color: #fff;
+        background-color: #ffffff;
         color: #6c757d;
+        cursor: pointer;
         transition: all 0.2s ease-in-out;
         z-index: 5;
     }
     .toggle-password-btn:hover, .toggle-password-btn:focus {
         background-color: #f8f9fa;
-        color: var(--primary-color, #10b981);
-        border-color: #ced4da;
+        color: #10b981;
+        border-color: #10b981;
         box-shadow: none;
     }
     .input-group > .form-control:focus {
@@ -63,23 +67,28 @@
                     </div>
                     
                     <div class="row">
+                        <!-- Password with Show/Hide Eye Symbol -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold" for="id_password1">Password</label>
-                            <div class="input-group">
+                            <div class="input-group password-input-group">
                                 {{ form.password1 }}
-                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password1" title="Show or hide password" aria-label="Toggle password visibility">
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" onclick="togglePasswordVisibility('id_password1', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                             </div>
+                            <small class="text-muted" style="font-size: 0.78rem;">Must be at least 8 characters.</small>
                         </div>
+
+                        <!-- Confirm Password with Show/Hide Eye Symbol -->
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold" for="id_password2">Confirm Password</label>
-                            <div class="input-group">
+                            <div class="input-group password-input-group">
                                 {{ form.password2 }}
-                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password2" title="Show or hide confirm password" aria-label="Toggle password visibility">
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" onclick="togglePasswordVisibility('id_password2', this)" title="Show/Hide Confirm Password" aria-label="Toggle confirm password visibility">
                                     <i class="fa-solid fa-eye"></i>
                                 </button>
                             </div>
+                            <small class="text-muted" style="font-size: 0.78rem;">Enter the same password to verify.</small>
                         </div>
                     </div>
                     
@@ -102,38 +111,37 @@
 </div>
 
 <script>
+    // Global function to toggle password visibility
+    function togglePasswordVisibility(targetId, btn) {
+        const input = document.getElementById(targetId) || btn.parentElement.querySelector('input');
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+            btn.setAttribute('title', 'Hide password');
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+            btn.setAttribute('title', 'Show password');
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         let inputs = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], select, textarea, input[type="file"]');
         inputs.forEach(input => {
             if(input.tagName === 'SELECT') {
                 input.classList.add('form-select');
-            } else if (input.type !== 'file') {
-                input.classList.add('form-control');
             } else {
                 input.classList.add('form-control');
             }
-        });
-
-        // Toggle Password Visibility with Eye Icon
-        document.querySelectorAll('.toggle-password-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const targetId = this.getAttribute('data-target');
-                const input = document.getElementById(targetId) || this.parentElement.querySelector('input');
-                if (!input) return;
-                const icon = this.querySelector('i');
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                    this.setAttribute('title', 'Hide password');
-                } else {
-                    input.type = 'password';
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                    this.setAttribute('title', 'Show password');
-                }
-            });
         });
 
         // Inline form validation rendering
