@@ -28,6 +28,7 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+staticfiles/
 /media/qr_codes/
 server.log
 check_output.txt

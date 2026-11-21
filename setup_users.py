@@ -13,14 +13,14 @@ def create_demo_users():
         CustomUser.objects.create_superuser(
             username='admin',
             email='admin@foodbridge.ai',
-            password='Admin@1234',
+            password='Pass@1234',
             first_name='Super',
             last_name='Admin',
         )
         print("✅ Created superuser: admin")
     else:
         u = CustomUser.objects.get(username='admin')
-        u.set_password('Admin@1234')
+        u.set_password('Pass@1234')
         u.is_active = True
         u.save()
         print("🔄 Reset admin password")
@@ -30,7 +30,7 @@ def create_demo_users():
         donor = CustomUser.objects.create_user(
             username='donor_demo',
             email='donor@foodbridge.ai',
-            password='Donor@1234',
+            password='Pass@1234',
             role='DONOR',
             first_name='Ravi',
             last_name='Kumar',
@@ -49,7 +49,7 @@ def create_demo_users():
         print("✅ Created DONOR: donor_demo")
     else:
         u = CustomUser.objects.get(username='donor_demo')
-        u.set_password('Donor@1234')
+        u.set_password('Pass@1234')
         u.is_active = True
         u.save()
         print("🔄 Reset donor_demo password")
@@ -59,7 +59,7 @@ def create_demo_users():
         ngo = CustomUser.objects.create_user(
             username='ngo_demo',
             email='ngo@foodbridge.ai',
-            password='Ngo@12345',
+            password='Pass@1234',
             role='NGO',
             first_name='Priya',
             last_name='Sharma',
@@ -82,7 +82,7 @@ def create_demo_users():
         print("✅ Created NGO: ngo_demo")
     else:
         u = CustomUser.objects.get(username='ngo_demo')
-        u.set_password('Ngo@12345')
+        u.set_password('Pass@1234')
         u.is_active = True
         u.save()
         print("🔄 Reset ngo_demo password")
@@ -92,7 +92,7 @@ def create_demo_users():
         vol = CustomUser.objects.create_user(
             username='volunteer_demo',
             email='volunteer@foodbridge.ai',
-            password='Vol@12345',
+            password='Pass@1234',
             role='VOLUNTEER',
             first_name='Arjun',
             last_name='Mehta',
@@ -116,18 +116,18 @@ def create_demo_users():
         print("✅ Created VOLUNTEER: volunteer_demo")
     else:
         u = CustomUser.objects.get(username='volunteer_demo')
-        u.set_password('Vol@12345')
+        u.set_password('Pass@1234')
         u.is_active = True
         u.save()
         print("🔄 Reset volunteer_demo password")
 
     print("\n" + "="*50)
-    print("   DEMO LOGIN CREDENTIALS")
+    print("   DEMO LOGIN CREDENTIALS (All passwords: Pass@1234)")
     print("="*50)
-    print(f"  ADMIN     → admin / Admin@1234")
-    print(f"  DONOR     → donor_demo / Donor@1234")
-    print(f"  NGO       → ngo_demo / Ngo@12345")
-    print(f"  VOLUNTEER → volunteer_demo / Vol@12345")
+    print(f"  ADMIN     → admin / Pass@1234")
+    print(f"  DONOR     → donor_demo / Pass@1234")
+    print(f"  NGO       → ngo_demo / Pass@1234")
+    print(f"  VOLUNTEER → volunteer_demo / Pass@1234")
     print("="*50)
 
 create_demo_users()

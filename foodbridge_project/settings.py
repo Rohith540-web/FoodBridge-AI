@@ -18,7 +18,9 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*'] if DEBUG else ['127.0.0.1', 'localhost', 'testserver'] + [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
+ALLOWED_HOSTS = ['*'] if DEBUG else ['127.0.0.1', 'localhost', 'testserver', '.onrender.com'] + [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
+
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'https://*.vercel.app', 'http://127.0.0.1:8000', 'http://localhost:8000']
 
 # Application definition
 INSTALLED_APPS = [
@@ -49,6 +51,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Enable WhiteNoise for high-performance static file serving in production
+try:
+    import whitenoise
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+except ImportError:
+    pass
+
 ROOT_URLCONF = 'foodbridge_project.urls'
 
 TEMPLATES = [
@@ -76,6 +86,15 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Use PostgreSQL if DATABASE_URL is set (Render / Heroku / Neon)
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    try:
+        import dj_database_url
+        DATABASES['default'] = dj_database_url.config(default=database_url, conn_max_age=600)
+    except ImportError:
+        pass
 
 # Password validation
 # https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
@@ -106,8 +125,9 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
