@@ -2,6 +2,27 @@
 
 {% block title %}Register - FoodBridge AI{% endblock %}
 
+{% block extra_css %}
+<style>
+    .toggle-password-btn {
+        border-color: #dee2e6;
+        background-color: #fff;
+        color: #6c757d;
+        transition: all 0.2s ease-in-out;
+        z-index: 5;
+    }
+    .toggle-password-btn:hover, .toggle-password-btn:focus {
+        background-color: #f8f9fa;
+        color: var(--primary-color, #10b981);
+        border-color: #ced4da;
+        box-shadow: none;
+    }
+    .input-group > .form-control:focus {
+        z-index: 3;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center" data-aos="fade-up">
@@ -14,11 +35,6 @@
                 
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    
-
-                    
-
-
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -48,12 +64,22 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Password</label>
-                            {{ form.password1 }}
+                            <label class="form-label fw-semibold" for="id_password1">Password</label>
+                            <div class="input-group">
+                                {{ form.password1 }}
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password1" title="Show or hide password" aria-label="Toggle password visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-semibold">Confirm Password</label>
-                            {{ form.password2 }}
+                            <label class="form-label fw-semibold" for="id_password2">Confirm Password</label>
+                            <div class="input-group">
+                                {{ form.password2 }}
+                                <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password2" title="Show or hide confirm password" aria-label="Toggle password visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -61,8 +87,6 @@
                         <label class="form-label fw-semibold">Address</label>
                         {{ form.address }}
                     </div>
-
-                    
 
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-gradient btn-lg rounded-pill">Create Account</button>
@@ -90,6 +114,28 @@
             }
         });
 
+        // Toggle Password Visibility with Eye Icon
+        document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId) || this.parentElement.querySelector('input');
+                if (!input) return;
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                    this.setAttribute('title', 'Hide password');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                    this.setAttribute('title', 'Show password');
+                }
+            });
+        });
+
         // Inline form validation rendering
         {% if form.errors %}
             {% for field in form %}
@@ -98,9 +144,14 @@
                     if(inputElement) {
                         inputElement.classList.add('is-invalid');
                         var errDiv = document.createElement('div');
-                        errDiv.className = 'invalid-feedback fw-semibold';
+                        errDiv.className = 'invalid-feedback fw-semibold d-block';
                         errDiv.innerText = '{{ field.errors.0|escapejs }}';
-                        inputElement.parentNode.appendChild(errDiv);
+                        var group = inputElement.closest('.input-group');
+                        if (group) {
+                            group.after(errDiv);
+                        } else {
+                            inputElement.parentNode.appendChild(errDiv);
+                        }
                     }
                 {% endif %}
             {% endfor %}

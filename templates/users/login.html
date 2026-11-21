@@ -2,6 +2,27 @@
 
 {% block title %}Login - FoodBridge AI{% endblock %}
 
+{% block extra_css %}
+<style>
+    .toggle-password-btn {
+        border-color: #dee2e6;
+        background-color: #fff;
+        color: #6c757d;
+        transition: all 0.2s ease-in-out;
+        z-index: 5;
+    }
+    .toggle-password-btn:hover, .toggle-password-btn:focus {
+        background-color: #f8f9fa;
+        color: var(--primary-color, #10b981);
+        border-color: #ced4da;
+        box-shadow: none;
+    }
+    .input-group > .form-control:focus {
+        z-index: 3;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center" data-aos="fade-up">
@@ -14,7 +35,6 @@
                 
                 <form method="post" autocomplete="on">
                     {% csrf_token %}
-                    <!-- Refresh page on load if CSRF cookie is missing (handles stale tab issue) -->
 
                     {% if form.errors %}
                         <div class="alert alert-danger shadow-sm rounded-3">
@@ -28,8 +48,13 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Password</label>
-                        {{ form.password }}
+                        <label class="form-label fw-semibold" for="id_password">Password</label>
+                        <div class="input-group">
+                            {{ form.password }}
+                            <button class="btn btn-outline-secondary toggle-password-btn" type="button" data-target="id_password" title="Show or hide password" aria-label="Toggle password visibility">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -61,11 +86,32 @@
 </div>
 
 <script>
-    // Add form-control class to django forms
     document.addEventListener("DOMContentLoaded", function() {
         let inputs = document.querySelectorAll('input[type="text"], input[type="password"]');
         inputs.forEach(input => {
             input.classList.add('form-control');
+        });
+
+        // Toggle Password Visibility with Eye Icon
+        document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId) || this.parentElement.querySelector('input');
+                if (!input) return;
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                    this.setAttribute('title', 'Hide password');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                    this.setAttribute('title', 'Show password');
+                }
+            });
         });
     });
 </script>
