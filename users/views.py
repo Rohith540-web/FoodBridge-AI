@@ -19,6 +19,17 @@ def register_view(request):
         role = request.POST.get('role', 'DONOR')
 
         if form.is_valid():
+            username = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('email')
+            phone = form.cleaned_data.get('phone_number')
+
+            # Clean up any stale unverified (is_active=False) registrations with matching username, email, or phone
+            from django.db.models import Q
+            stale_query = Q(username=username) | Q(email__iexact=email)
+            if phone:
+                stale_query |= Q(phone_number=phone)
+            CustomUser.objects.filter(is_active=False).filter(stale_query).delete()
+
             user = form.save(commit=False)
             user.role = role  # Apply the role from POST (form field may not capture it)
             user.is_active = False  # Require OTP verification
