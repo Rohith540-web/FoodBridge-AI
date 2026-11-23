@@ -143,7 +143,14 @@ def qr_scanner(request, donation_id):
     reservation = get_object_or_404(Reservation, donation=donation, ngo=request.user)
     
     if request.method == 'POST':
-        # Simulate successful scan
+        scanned_data = request.POST.get('qr_code_data', '').strip()
+        if scanned_data and scanned_data != 'simulated':
+            expected_token = f"Donation_ID:{donation.id}"
+            if expected_token not in scanned_data and str(donation.id) not in scanned_data:
+                from django.contrib import messages
+                messages.error(request, f"Scanned QR Code does not match donation #{donation.id} ({donation.food_name}). Please scan the correct QR code.")
+                return redirect('ngo_qr_scanner', donation_id=donation.id)
+
         donation.status = 'PICKED_UP'
         donation.save()
         
@@ -154,7 +161,7 @@ def qr_scanner(request, donation_id):
             donation.delivery.save()
             
         from django.contrib import messages
-        messages.success(request, 'QR Verification Successful! Status updated to Food Picked Up.')
+        messages.success(request, f"QR Verification Successful! Food '{donation.food_name}' marked as received.")
         return redirect('ngo_reservations')
         
     return render(request, 'ngo/qr_scanner.html', {'donation': donation})

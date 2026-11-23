@@ -94,6 +94,15 @@ def pickup_qr_scanner(request, delivery_id):
     delivery = get_object_or_404(Delivery, id=delivery_id, volunteer=request.user)
     
     if request.method == 'POST':
+        scanned_data = request.POST.get('qr_code_data', '').strip()
+        # If real scanned data was submitted, validate it
+        if scanned_data and scanned_data != 'simulated':
+            expected_token = f"Donation_ID:{delivery.donation.id}"
+            if expected_token not in scanned_data and str(delivery.donation.id) not in scanned_data:
+                from django.contrib import messages
+                messages.error(request, f"Scanned QR Code does not match this donation (#{delivery.donation.id}: {delivery.donation.food_name}). Please scan the correct QR code.")
+                return redirect('pickup_qr_scanner', delivery_id=delivery.id)
+
         delivery.status = 'IN_TRANSIT'
         delivery.picked_up_at = timezone.now()
         delivery.save()
@@ -115,7 +124,7 @@ def pickup_qr_scanner(request, delivery_id):
             )
             
         from django.contrib import messages
-        messages.success(request, 'Pickup verified successfully! Status updated to In Transit.')
+        messages.success(request, f"QR Verification Verified! Food '{delivery.donation.food_name}' is now In Transit.")
         return redirect('volunteer_deliveries')
         
     return render(request, 'volunteer/qr_scanner.html', {'delivery': delivery, 'scan_type': 'pickup'})
@@ -128,6 +137,14 @@ def delivery_qr_scanner(request, delivery_id):
     delivery = get_object_or_404(Delivery, id=delivery_id, volunteer=request.user)
     
     if request.method == 'POST':
+        scanned_data = request.POST.get('qr_code_data', '').strip()
+        if scanned_data and scanned_data != 'simulated':
+            expected_token = f"Donation_ID:{delivery.donation.id}"
+            if expected_token not in scanned_data and str(delivery.donation.id) not in scanned_data:
+                from django.contrib import messages
+                messages.error(request, f"Scanned QR Code does not match delivery for donation #{delivery.donation.id}. Please scan the correct QR code.")
+                return redirect('delivery_qr_scanner', delivery_id=delivery.id)
+
         delivery.status = 'DELIVERED'
         delivery.delivered_at = timezone.now()
         delivery.save()
@@ -136,7 +153,7 @@ def delivery_qr_scanner(request, delivery_id):
         delivery.donation.save()
         
         from django.contrib import messages
-        messages.success(request, 'Delivery verified successfully! Reward Points earned.')
+        messages.success(request, 'Delivery verified successfully via QR Scan! Certificate generated.')
         return redirect('delivery_success', delivery_id=delivery.id)
         
     return render(request, 'volunteer/qr_scanner.html', {'delivery': delivery, 'scan_type': 'delivery'})
