@@ -150,11 +150,29 @@
             scrollWheelZoom: true
         }).setView([defaultLat, defaultLng], 14);
 
-        L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '© Esri — Street Map'
+        });
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '© Esri — Satellite Imagery'
+        });
+
+        const googleLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: '© Google Maps | FoodBridge AI'
-        }).addTo(map);
+            attribution: '© Google Maps'
+        });
+
+        streetLayer.addTo(map);
+
+        L.control.layers({
+            "🗺️ Streets": streetLayer,
+            "🛰️ Satellite (Photo)": satelliteLayer,
+            "🌐 Google Roads": googleLayer
+        }, null, { position: 'topright' }).addTo(map);
 
         const pinIcon = L.divIcon({
             className: 'custom-pickup-pin',
