@@ -10,7 +10,7 @@
             <h3 class="fw-bold mb-4">Nearby Donations</h3>
             
             {% for donation in donations %}
-            <div class="glass-card mb-4 p-3 donation-card" data-lat="{{ donation.donor.latitude|default:'12.9780' }}" data-lng="{{ donation.donor.longitude|default:'77.6400' }}" data-id="{{ donation.id }}">
+            <div class="glass-card mb-4 p-3 donation-card" data-lat="{{ donation.get_latitude }}" data-lng="{{ donation.get_longitude }}" data-id="{{ donation.id }}">
                 <div class="d-flex justify-content-between">
                     <h5 class="fw-bold text-primary mb-1">{{ donation.food_name }}</h5>
                     <span class="badge bg-success">{{ donation.quantity }}</span>
@@ -23,7 +23,7 @@
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary btn-sm w-100 rounded-pill">Reserve Food</button>
                     </form>
-                    <a href="https://www.google.com/maps/search/?api=1&query={{ donation.donor.latitude|default:'12.9780' }},{{ donation.donor.longitude|default:'77.6400' }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 31px; height: 31px;" title="View on Google Maps">
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ donation.get_latitude }},{{ donation.get_longitude }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 31px; height: 31px;" title="View on Google Maps">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                     </a>
                 </div>
@@ -92,7 +92,7 @@
         }).addTo(map).bindPopup('<b>Your NGO Location</b>');
         
         const cards = document.querySelectorAll('.donation-card');
-        const latLngs = [[ngoLat, ngoLng]];
+        const donationLatLngs = [];
 
         cards.forEach((card, index) => {
             let lat = parseFloat(card.getAttribute('data-lat'));
@@ -100,28 +100,27 @@
             let title = card.querySelector('h5').innerText;
             let qty = card.querySelector('.badge').innerText;
             
-            // Add jitter if duplicate coordinates
-            lat = lat + (Math.sin(index + 1) * 0.008);
-            lng = lng + (Math.cos(index + 1) * 0.008);
-            latLngs.push([lat, lng]);
-            
-            let marker = L.circleMarker([lat, lng], {
-                radius: 8,
-                fillColor: '#198754',
-                color: '#ffffff',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9
-            }).addTo(map).bindPopup(`<b>${title}</b><br><span class="badge bg-success">${qty}</span><br>Available for rescue.`);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                donationLatLngs.push([lat, lng]);
                 
-            card.addEventListener('mouseenter', () => {
-                marker.openPopup();
-                map.setView([lat, lng], 14, {animate: true});
-            });
+                let marker = L.circleMarker([lat, lng], {
+                    radius: 9,
+                    fillColor: '#198754',
+                    color: '#ffffff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.95
+                }).addTo(map).bindPopup(`<b>${title}</b><br><span class="badge bg-success">${qty}</span><br>Available for rescue.`);
+                    
+                card.addEventListener('mouseenter', () => {
+                    marker.openPopup();
+                    map.setView([lat, lng], 14, {animate: true});
+                });
+            }
         });
 
-        if (latLngs.length > 1) {
-            map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
+        if (donationLatLngs.length > 0) {
+            map.fitBounds(L.latLngBounds(donationLatLngs), { padding: [60, 60], maxZoom: 14 });
         }
     });
 </script>

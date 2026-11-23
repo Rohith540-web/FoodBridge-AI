@@ -31,6 +31,52 @@ class Donation(models.Model):
     priority_score = models.FloatField(null=True, blank=True)
     
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+
+    @property
+    def get_latitude(self):
+        if self.latitude:
+            return self.latitude
+        try:
+            if self.donor and self.donor.latitude:
+                return self.donor.latitude
+        except Exception:
+            pass
+        loc = (self.pickup_location or '').lower()
+        if 'thiruvallur' in loc or 'tiruvallur' in loc:
+            return 13.1433
+        elif 'saveetha' in loc or 'thandalam' in loc:
+            return 13.0280
+        elif 'sriperumbudur' in loc:
+            return 12.9675
+        elif 'mannur' in loc:
+            return 13.0199
+        elif 'chennai' in loc or 'madras' in loc:
+            return 13.0827
+        return 13.0827
+
+    @property
+    def get_longitude(self):
+        if self.longitude:
+            return self.longitude
+        try:
+            if self.donor and self.donor.longitude:
+                return self.donor.longitude
+        except Exception:
+            pass
+        loc = (self.pickup_location or '').lower()
+        if 'thiruvallur' in loc or 'tiruvallur' in loc:
+            return 79.9079
+        elif 'saveetha' in loc or 'thandalam' in loc:
+            return 80.0163
+        elif 'sriperumbudur' in loc:
+            return 79.9436
+        elif 'mannur' in loc:
+            return 79.9846
+        elif 'chennai' in loc or 'madras' in loc:
+            return 80.2707
+        return 80.2707
 
     @property
     def image_url(self):

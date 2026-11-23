@@ -14,8 +14,8 @@ def ngo_map_view(request):
         return redirect('dashboard_home')
         
     available_donations = Donation.objects.filter(status='AVAILABLE')
-    ngo_lat = request.user.latitude or 12.9716
-    ngo_lng = request.user.longitude or 77.5946
+    ngo_lat = request.user.latitude or 13.0827
+    ngo_lng = request.user.longitude or 80.2707
     return render(request, 'ngo/map.html', {
         'donations': available_donations,
         'ngo_lat': ngo_lat,
@@ -142,21 +142,23 @@ def ngo_track_volunteer(request, donation_id):
     if hasattr(donation, 'delivery'):
         delivery = donation.delivery
         
-    donor_lat = donation.donor.latitude or 12.9780
-    donor_lng = donation.donor.longitude or 77.6400
+    donor_lat = donation.get_latitude
+    donor_lng = donation.get_longitude
     
-    ngo_lat = request.user.latitude or 12.9716
-    ngo_lng = request.user.longitude or 77.5946
+    ngo_lat = request.user.latitude or 13.0827
+    ngo_lng = request.user.longitude or 80.2707
     ngo_name = "Your NGO Center"
     if hasattr(request.user, 'ngo_profile') and request.user.ngo_profile.organization_name:
         ngo_name = request.user.ngo_profile.organization_name
+    else:
+        ngo_name = request.user.username
 
-    vol_lat = 12.9352
-    vol_lng = 77.6245
+    vol_lat = 13.0280
+    vol_lng = 80.0163
     vol_name = "Volunteer"
     if delivery and delivery.volunteer:
-        vol_lat = delivery.volunteer.latitude or 12.9352
-        vol_lng = delivery.volunteer.longitude or 77.6245
+        vol_lat = delivery.volunteer.latitude or 13.0280
+        vol_lng = delivery.volunteer.longitude or 80.0163
         vol_name = delivery.volunteer.username
 
     google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin={donor_lat},{donor_lng}&destination={ngo_lat},{ngo_lng}&travelmode=driving"

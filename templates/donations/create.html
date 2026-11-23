@@ -69,6 +69,8 @@
                     <hr class="my-4">
                     
                     <h5 class="fw-bold mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Location</h5>
+                    <input type="hidden" name="latitude" id="id_latitude" value="">
+                    <input type="hidden" name="longitude" id="id_longitude" value="">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Pickup Location</label>
                         <div class="input-group mb-2">
@@ -195,6 +197,11 @@
 
         function updateMarkerPosition(lat, lng, doReverseGeocode = true) {
             marker.setLatLng([lat, lng]);
+            const latField = document.getElementById('id_latitude');
+            const lngField = document.getElementById('id_longitude');
+            if (latField) latField.value = lat;
+            if (lngField) lngField.value = lng;
+
             if (coordsBadge) {
                 coordsBadge.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             }
