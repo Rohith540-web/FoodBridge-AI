@@ -55,6 +55,12 @@
                         </a>
                     {% endif %}
                     
+                    {% if donation.status == 'RESERVED' or donation.status == 'ASSIGNED' %}
+                        <button type="button" class="btn btn-outline-warning btn-sm rounded-pill mt-2" data-bs-toggle="modal" data-bs-target="#cancelResModal{{ donation.id }}">
+                            <i class="fa-solid fa-rotate-left me-1"></i>Cancel Reservation
+                        </button>
+                    {% endif %}
+                    
                     {% if donation.status == 'RESERVED' or donation.status == 'ASSIGNED' or donation.status == 'IN_TRANSIT' or donation.status == 'DELIVERED' or donation.status == 'PICKED_UP' %}
                         <a href="{% url 'track_volunteer' donation.id %}" class="btn btn-gradient btn-sm rounded-pill mt-2"><i class="fa-solid fa-map-location-dot me-2"></i>Track Volunteer</a>
                     {% endif %}
@@ -169,6 +175,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Cancel Reservation Modal for Donor -->
+    {% if donation.status == 'RESERVED' or donation.status == 'ASSIGNED' %}
+    <div class="modal fade" id="cancelResModal{{ donation.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg text-center p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-warning"><i class="fa-solid fa-rotate-left me-2"></i>Cancel Reservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-3">
+                    <p class="mb-1">Cancel the current reservation for:</p>
+                    <h5 class="fw-bold text-dark">{{ donation.food_name }}</h5>
+                    <p class="text-muted small mt-2 mb-0">This will release the food back to <strong>AVAILABLE</strong> status so other NGOs can reserve it.</p>
+                </div>
+                <div class="modal-footer border-0 d-flex justify-content-center gap-2 pt-0 pb-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Keep Reserved</button>
+                    <form action="{% url 'cancel_donation_reservation' donation.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 shadow-sm">Yes, Cancel Reservation</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 {% endfor %}
 
 <style>

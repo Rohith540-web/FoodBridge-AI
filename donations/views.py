@@ -130,8 +130,59 @@ def edit_donation(request, donation_id):
 def delete_donation(request, donation_id):
     donation = get_object_or_404(Donation, id=donation_id, donor=request.user)
     if request.method == 'POST':
+        # Notify reserved NGO or assigned volunteer if active
+        if hasattr(donation, 'reservation') and donation.reservation.ngo:
+            Notification.objects.create(
+                user=donation.reservation.ngo,
+                title="Donation Deleted by Donor",
+                message=f"Donor {request.user.username} deleted the listing for '{donation.food_name}'."
+            )
+        if hasattr(donation, 'delivery') and donation.delivery.volunteer:
+            Notification.objects.create(
+                user=donation.delivery.volunteer,
+                title="Delivery Cancelled",
+                message=f"The listing for '{donation.food_name}' was deleted by the donor."
+            )
         donation.delete()
         messages.success(request, 'Donation deleted successfully.')
+    return redirect('donation_history')
+
+
+@login_required
+def cancel_donation_reservation(request, donation_id):
+    if request.user.role != 'DONOR':
+        return redirect('dashboard_home')
+
+    donation = get_object_or_404(Donation, id=donation_id, donor=request.user)
+
+    if donation.status in ['PICKED_UP', 'DELIVERED']:
+        messages.error(request, "Cannot cancel reservation once food is already in transit or delivered.")
+        return redirect('donation_history')
+
+    if request.method == 'POST':
+        # Remove delivery if exists
+        if hasattr(donation, 'delivery'):
+            if donation.delivery.volunteer:
+                Notification.objects.create(
+                    user=donation.delivery.volunteer,
+                    title="Delivery Cancelled by Donor",
+                    message=f"Donor {request.user.username} cancelled the reservation for '{donation.food_name}'."
+                )
+            donation.delivery.delete()
+
+        # Notify NGO and delete reservation
+        if hasattr(donation, 'reservation'):
+            Notification.objects.create(
+                user=donation.reservation.ngo,
+                title="Reservation Cancelled by Donor",
+                message=f"Donor {request.user.username} cancelled the reservation for '{donation.food_name}'. The food has been reset to available."
+            )
+            donation.reservation.delete()
+
+        donation.status = 'AVAILABLE'
+        donation.save()
+        messages.success(request, f"Reservation for '{donation.food_name}' cancelled. The food is now AVAILABLE again.")
+
     return redirect('donation_history')
 
 

@@ -57,6 +57,49 @@ def reserve_donation(request, donation_id):
     return redirect('ngo_map_view')
 
 @login_required
+def cancel_reservation(request, reservation_id):
+    if request.user.role != 'NGO':
+        return redirect('dashboard_home')
+        
+    reservation = get_object_or_404(Reservation, id=reservation_id, ngo=request.user)
+    donation = reservation.donation
+    
+    # Only allow cancellation before the food has been physically picked up or delivered
+    if donation.status in ['PICKED_UP', 'DELIVERED']:
+        messages.error(request, "Cannot cancel this reservation because food pickup or delivery is already in progress.")
+        return redirect('ngo_reservations')
+        
+    if request.method == 'POST':
+        # If there is an associated delivery, notify volunteer and remove delivery
+        if hasattr(donation, 'delivery'):
+            vol = donation.delivery.volunteer
+            if vol:
+                Notification.objects.create(
+                    user=vol,
+                    title="Delivery Assignment Cancelled",
+                    message=f"The NGO {request.user.username} cancelled the reservation for '{donation.food_name}'."
+                )
+            donation.delivery.delete()
+            
+        # Revert donation status to AVAILABLE
+        donation.status = 'AVAILABLE'
+        donation.save()
+        
+        # Notify donor
+        Notification.objects.create(
+            user=donation.donor,
+            title="Reservation Cancelled",
+            message=f"The NGO {request.user.username} cancelled their reservation for '{donation.food_name}'. Your donation is now AVAILABLE again."
+        )
+        
+        food_name = donation.food_name
+        reservation.delete()
+        messages.success(request, f"Reservation for '{food_name}' was cancelled successfully. The food is now available for other NGOs.")
+        
+    return redirect('ngo_reservations')
+
+
+@login_required
 def my_reservations(request):
     if request.user.role != 'NGO':
         return redirect('dashboard_home')

@@ -41,6 +41,38 @@ def accept_delivery(request, reservation_id):
     return redirect('volunteer_deliveries')
 
 @login_required
+def cancel_delivery(request, delivery_id):
+    if request.user.role != 'VOLUNTEER':
+        return redirect('dashboard_home')
+        
+    delivery = get_object_or_404(Delivery, id=delivery_id, volunteer=request.user)
+    
+    # Only allow cancellation if still ASSIGNED (before physical pickup)
+    if delivery.status != 'ASSIGNED':
+        from django.contrib import messages
+        messages.error(request, "Cannot cancel this delivery once food pickup has started or completed.")
+        return redirect('volunteer_deliveries')
+        
+    if request.method == 'POST':
+        donation = delivery.donation
+        from notifications.models import Notification
+        from django.contrib import messages
+        
+        # Notify the NGO
+        if hasattr(donation, 'reservation') and donation.reservation.ngo:
+            Notification.objects.create(
+                user=donation.reservation.ngo,
+                title="Volunteer Delivery Cancelled",
+                message=f"Volunteer {request.user.username} had to cancel the delivery for '{donation.food_name}'. It is now open for another volunteer to accept."
+            )
+            
+        food_name = donation.food_name
+        delivery.delete()
+        messages.success(request, f"Delivery assignment for '{food_name}' was cancelled. It is now open for other volunteers.")
+        
+    return redirect('volunteer_deliveries')
+
+@login_required
 def navigation(request, delivery_id):
     if request.user.role != 'VOLUNTEER':
         return redirect('dashboard_home')

@@ -46,6 +46,11 @@
                     {% elif reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' or reservation.donation.status == 'IN_TRANSIT' or reservation.donation.status == 'PICKED_UP' %}
                         <a href="{% url 'ngo_track_volunteer' reservation.donation.id %}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fa-solid fa-map-location-dot me-2"></i>Track Volunteer</a>
                         <a href="{% url 'ngo_qr_scanner' reservation.donation.id %}" class="btn btn-gradient btn-sm rounded-pill"><i class="fa-solid fa-qrcode me-2"></i>QR Verification</a>
+                        {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill mt-1" data-bs-toggle="modal" data-bs-target="#cancelModal{{ reservation.id }}">
+                            <i class="fa-solid fa-xmark me-1"></i>Cancel Reservation
+                        </button>
+                        {% endif %}
                     {% else %}
                         <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Waiting for Volunteer</span>
                     {% endif %}
@@ -53,6 +58,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Cancel Modal -->
+    {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}
+    <div class="modal fade" id="cancelModal{{ reservation.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg text-center p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Cancel Reservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-3">
+                    <p class="mb-1">Are you sure you want to cancel your reservation for:</p>
+                    <h5 class="fw-bold text-dark">{{ reservation.donation.food_name }} ({{ reservation.donation.quantity }})</h5>
+                    <p class="text-muted small mt-2 mb-0">The food will be released back to the available pool so other NGOs can rescue it.</p>
+                </div>
+                <div class="modal-footer border-0 d-flex justify-content-center gap-2 pt-0 pb-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Keep Reservation</button>
+                    <form action="{% url 'cancel_reservation' reservation.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger rounded-pill px-4">Yes, Cancel Reservation</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     {% empty %}
     <div class="col-12 text-center py-5">
         <div class="p-5 bg-white rounded-4 shadow-sm">

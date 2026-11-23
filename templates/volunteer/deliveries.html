@@ -97,6 +97,9 @@
                                     
                                     {% if delivery.status == 'ASSIGNED' %}
                                         <a href="{% url 'pickup_qr_scanner' delivery.id %}" class="btn btn-sm btn-gradient rounded-pill"><i class="fa-solid fa-qrcode me-1"></i> Scan Pickup</a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-bs-toggle="modal" data-bs-target="#cancelDeliveryModal{{ delivery.id }}" title="Cancel Delivery Assignment">
+                                            <i class="fa-solid fa-xmark me-1"></i> Cancel
+                                        </button>
                                     {% elif delivery.status == 'IN_TRANSIT' %}
                                         <a href="{% url 'delivery_qr_scanner' delivery.id %}" class="btn btn-sm btn-success rounded-pill"><i class="fa-solid fa-qrcode me-1"></i> Scan Delivery</a>
                                     {% else %}
@@ -119,6 +122,34 @@
         </div>
     </div>
 </div>
+
+<!-- Cancel Delivery Modals -->
+{% for delivery in deliveries %}
+    {% if delivery.status == 'ASSIGNED' %}
+    <div class="modal fade" id="cancelDeliveryModal{{ delivery.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg text-center p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-circle-exclamation me-2"></i>Cancel Delivery Assignment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-3">
+                    <p class="mb-1">Are you sure you want to cancel this delivery assignment for:</p>
+                    <h5 class="fw-bold text-dark">{{ delivery.donation.food_name }}</h5>
+                    <p class="text-muted small mt-2 mb-0">The delivery task will be returned to the open volunteer pool so another volunteer can accept it.</p>
+                </div>
+                <div class="modal-footer border-0 d-flex justify-content-center gap-2 pt-0 pb-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Keep Delivery</button>
+                    <form action="{% url 'cancel_delivery' delivery.id %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger rounded-pill px-4">Yes, Cancel Delivery</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
 
 <script>
 function filterDeliveries(filter, btn) {
