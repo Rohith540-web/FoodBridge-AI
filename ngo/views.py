@@ -38,10 +38,16 @@ def reserve_donation(request, donation_id):
         donation.status = 'RESERVED'  # Fixed: was invalid 'ASSIGNED'
         donation.save()
         
-        # Auto-assign a random volunteer
-        volunteer = CustomUser.objects.filter(role='VOLUNTEER', is_active=True).first()
+        # Auto-assign to an active volunteer, preferring active user volunteers
+        real_vol = CustomUser.objects.filter(role='VOLUNTEER', is_active=True).exclude(username='volunteer_demo').first()
+        volunteer = real_vol or CustomUser.objects.filter(role='VOLUNTEER', is_active=True).first()
         if volunteer:
             Delivery.objects.create(volunteer=volunteer, donation=donation, status='ASSIGNED')
+            Notification.objects.create(
+                user=volunteer,
+                title="New Delivery Assigned!",
+                message=f"You have been assigned to deliver '{donation.food_name}' to NGO {request.user.username}."
+            )
             
         # Notify the donor
         Notification.objects.create(

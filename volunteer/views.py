@@ -12,10 +12,17 @@ def volunteer_deliveries(request):
     # Get deliveries assigned to this volunteer
     deliveries = Delivery.objects.filter(volunteer=request.user).order_by('-assigned_at')
     
-    # Also fetch available reservations that don't have a delivery assigned yet
-    # A volunteer could pick them up. Let's find Reservations without a Delivery.
+    # Available for Pickup:
+    # Include reservations waiting for pickup, or assigned to demo user, so any active volunteer can claim it
     from ngo.models import Reservation
-    pending_reservations = Reservation.objects.filter(donation__delivery__isnull=True)
+    from django.db.models import Q
+    
+    pending_reservations = Reservation.objects.filter(
+        donation__status__in=['RESERVED', 'ASSIGNED']
+    ).filter(
+        Q(donation__delivery__isnull=True) | 
+        Q(donation__delivery__volunteer__username='volunteer_demo', donation__delivery__status='ASSIGNED')
+    ).exclude(donation__delivery__volunteer=request.user).distinct()
     
     context = {
         'deliveries': deliveries,
@@ -29,15 +36,31 @@ def accept_delivery(request, reservation_id):
         return redirect('dashboard_home')
         
     from ngo.models import Reservation
+    from notifications.models import Notification
     reservation = get_object_or_404(Reservation, id=reservation_id)
     
-    # Create delivery
-    # Use get_or_create to prevent race-condition duplicate deliveries
-    Delivery.objects.get_or_create(
-        donation=reservation.donation,
-        defaults={'volunteer': request.user, 'status': 'ASSIGNED'}
+    # Claim or create delivery for this volunteer
+    delivery = Delivery.objects.filter(donation=reservation.donation).first()
+    if delivery:
+        delivery.volunteer = request.user
+        delivery.status = 'ASSIGNED'
+        delivery.save()
+    else:
+        delivery = Delivery.objects.create(
+            donation=reservation.donation,
+            volunteer=request.user,
+            status='ASSIGNED'
+        )
+
+    # Notify the NGO
+    Notification.objects.create(
+        user=reservation.ngo,
+        title="Volunteer Accepted Delivery",
+        message=f"Volunteer {request.user.username} has accepted the delivery task for '{reservation.donation.food_name}'."
     )
     
+    from django.contrib import messages
+    messages.success(request, f"You have accepted delivery for '{reservation.donation.food_name}'! It is now in your active assignments.")
     return redirect('volunteer_deliveries')
 
 @login_required
