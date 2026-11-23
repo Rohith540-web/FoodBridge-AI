@@ -43,13 +43,16 @@ def register_view(request):
                 user=user, defaults={'otp': otp_code}
             )
 
-            send_mail(
-                'FoodBridge AI - Account Verification',
-                f'Your OTP for account verification is: {otp_code}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
+            try:
+                send_mail(
+                    'FoodBridge AI - Account Verification Code',
+                    f'Welcome to FoodBridge AI!\n\nYour 6-digit OTP verification code is: {otp_code}\n\nThis code is valid for 10 minutes.\n\nThank you,\nFoodBridge AI Team',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                print(f"[EMAIL WARNING] Could not dispatch email via SMTP: {e}")
 
             request.session['verification_user_id'] = user.id
             return redirect('verify_otp')
@@ -68,35 +71,79 @@ def verify_otp_view(request):
     if not user_id:
         return redirect('register')
 
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        verification = OTPVerification.objects.get(user=user)
+    except (CustomUser.DoesNotExist, OTPVerification.DoesNotExist):
+        return redirect('register')
+
+    is_console_mode = settings.EMAIL_BACKEND.endswith('console.EmailBackend')
+
     if request.method == 'POST':
         if 'cancel' in request.POST:
             try:
-                user = CustomUser.objects.get(id=user_id)
                 if not user.is_active:
                     user.delete()
-            except CustomUser.DoesNotExist:
+            except Exception:
                 pass
             request.session.pop('verification_user_id', None)
             return redirect('register')
 
-        otp_entered = request.POST.get('otp')
+        otp_entered = request.POST.get('otp', '').strip()
+        if verification.otp == otp_entered and verification.is_valid():
+            user.is_active = True
+            user.save()
+            verification.delete()
+            del request.session['verification_user_id']
+            login(request, user)
+            return redirect('dashboard_home')
+        else:
+            return render(request, 'users/verify_otp.html', {
+                'error': 'Invalid or expired OTP. Please check the code and try again.',
+                'user_email': user.email,
+                'debug_otp': verification.otp,
+                'is_console_mode': is_console_mode,
+            })
+
+    return render(request, 'users/verify_otp.html', {
+        'user_email': user.email,
+        'debug_otp': verification.otp,
+        'is_console_mode': is_console_mode,
+    })
+
+
+def resend_otp_view(request):
+    user_id = request.session.get('verification_user_id')
+    if not user_id:
+        return redirect('register')
+
+    try:
+        from django.utils import timezone
+        user = CustomUser.objects.get(id=user_id)
+        new_otp = get_random_string(length=6, allowed_chars='0123456789')
+        verification, created = OTPVerification.objects.update_or_create(
+            user=user, defaults={'otp': new_otp}
+        )
+        verification.created_at = timezone.now()
+        verification.save()
+
         try:
-            user = CustomUser.objects.get(id=user_id)
-            verification = OTPVerification.objects.get(user=user)
+            send_mail(
+                'FoodBridge AI - Account Verification Code (Resent)',
+                f'Your new 6-digit OTP verification code is: {new_otp}\n\nThis code is valid for 10 minutes.\n\nThank you,\nFoodBridge AI Team',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print(f"[EMAIL WARNING] Could not dispatch email via SMTP: {e}")
 
-            if verification.otp == otp_entered and verification.is_valid():
-                user.is_active = True
-                user.save()
-                verification.delete()
-                del request.session['verification_user_id']
-                login(request, user)
-                return redirect('dashboard_home')
-            else:
-                return render(request, 'users/verify_otp.html', {'error': 'Invalid or expired OTP'})
-        except (CustomUser.DoesNotExist, OTPVerification.DoesNotExist):
-            return render(request, 'users/verify_otp.html', {'error': 'User or OTP not found'})
+        from django.contrib import messages
+        messages.success(request, 'A fresh 6-digit OTP code has been generated.')
+    except CustomUser.DoesNotExist:
+        return redirect('register')
 
-    return render(request, 'users/verify_otp.html')
+    return redirect('verify_otp')
 
 
 def login_view(request):

@@ -139,9 +139,20 @@ LOGIN_REDIRECT_URL = 'dashboard_home'
 LOGIN_URL = 'login'
 LOGOUT_REDIRECT_URL = 'landing'
 
-# Email settings — prints to console in development
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@foodbridge.ai'
+# Email settings
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+# If SMTP credentials are provided via environment variables, use real SMTP; otherwise use console
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'noreply@foodbridge.ai')
 
 # Use friendly 403 page instead of Django debug CSRF screen
 CSRF_FAILURE_VIEW = 'foodbridge_project.views.csrf_failure'
