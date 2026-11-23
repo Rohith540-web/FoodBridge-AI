@@ -335,11 +335,11 @@
             scrollWheelZoom: true
         }).setView(centerCoords, 13);
 
-        // CartoDB Voyager tile layer (fast, modern & never blocked)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        // Google Maps tile layer (clean, fast & fully authentic)
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            subdomains: 'abcd',
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '© Google Maps | FoodBridge AI Live GPS'
         }).addTo(map);
 
         // Custom HTML pin icons

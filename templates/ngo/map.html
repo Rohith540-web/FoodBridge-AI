@@ -57,10 +57,10 @@
         // Initialize Map centered on NGO location
         var map = L.map('map').setView([ngoLat, ngoLng], 12);
         
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            subdomains: 'abcd',
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>'
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '© Google Maps | FoodBridge AI Food Finder'
         }).addTo(map);
 
         // Add NGO home marker
