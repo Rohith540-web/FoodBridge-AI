@@ -32,5 +32,22 @@ class Donation(models.Model):
     
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
 
+    @property
+    def image_url(self):
+        if self.image:
+            try:
+                return self.image.url
+            except Exception:
+                pass
+        cat = (self.category or '').lower()
+        name = (self.food_name or '').lower()
+        if 'bakery' in cat or 'bread' in name or 'pastr' in name:
+            return '/static/images/food/bakery.jpg'
+        elif 'juice' in name or 'beverag' in cat or 'snack' in cat:
+            return '/static/images/food/beverages.jpg'
+        elif 'biryani' in name or 'rice' in name:
+            return '/static/images/food/biryani.jpg'
+        return '/static/images/food/meals.jpg'
+
     def __str__(self):
         return f"{self.food_name} by {self.donor.username}"

@@ -11,21 +11,14 @@
     
     <div class="row g-5">
         <div class="col-md-6">
-            {% if donation.image %}
-            <img src="{{ donation.image.url }}" class="img-fluid rounded-4 shadow-sm w-100" style="object-fit: cover; max-height: 400px;" alt="{{ donation.food_name }}">
-            {% else %}
-            <div class="d-flex align-items-center justify-content-center bg-light rounded-4 shadow-sm w-100" style="height: 400px;">
-                <i class="fa-solid fa-utensils text-secondary opacity-50" style="font-size: 5rem;"></i>
-            </div>
-            {% endif %}
+            <img src="{{ donation.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" style="object-fit: cover; max-height: 400px;" alt="{{ donation.food_name }}">
             
             <div class="mt-4 p-4 bg-light rounded-4 shadow-sm">
                 <h5 class="fw-bold mb-3"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Pickup Location</h5>
                 <p class="text-muted mb-3">{{ donation.pickup_location }}</p>
-                <!-- Placeholder for Google Map -->
-                <div class="bg-secondary bg-opacity-25 rounded-3 d-flex align-items-center justify-content-center" style="height: 200px;">
-                    <span class="text-muted"><i class="fa-solid fa-map me-2"></i>Google Maps Integration</span>
-                </div>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ donation.pickup_location|urlencode }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm rounded-pill w-100 shadow-sm py-2">
+                    <i class="fa-brands fa-google text-danger me-2"></i>View Location on Google Maps
+                </a>
             </div>
         </div>
         

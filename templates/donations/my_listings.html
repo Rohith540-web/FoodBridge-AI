@@ -24,17 +24,10 @@
     {% for donation in donations %}
     <div class="col-md-6 col-lg-4 listing-card" data-status="{{ donation.status }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
         <div class="card h-100 border-0 shadow-sm custom-card overflow-hidden rounded-4">
-            {% if donation.image %}
-                <div style="height: 180px; position: relative;">
-                    <img src="{{ donation.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ donation.food_name }}">
-                    <span class="badge {% if donation.status == 'AVAILABLE' %}bg-warning{% elif donation.status == 'DELIVERED' %}bg-success{% else %}bg-info{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ donation.get_status_display }}</span>
-                </div>
-            {% else %}
-                <div class="bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 180px; position: relative;">
-                    <i class="fa-solid fa-utensils fs-1 text-muted opacity-50"></i>
-                    <span class="badge {% if donation.status == 'AVAILABLE' %}bg-warning{% elif donation.status == 'DELIVERED' %}bg-success{% else %}bg-info{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ donation.get_status_display }}</span>
-                </div>
-            {% endif %}
+            <div style="height: 180px; position: relative;">
+                <img src="{{ donation.image_url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ donation.food_name }}">
+                <span class="badge {% if donation.status == 'AVAILABLE' %}bg-warning{% elif donation.status == 'DELIVERED' %}bg-success{% else %}bg-info{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ donation.get_status_display }}</span>
+            </div>
             
             <div class="card-body p-4">
                 <h5 class="fw-bold mb-3 text-truncate">{{ donation.food_name }}</h5>
