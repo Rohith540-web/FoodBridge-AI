@@ -13,17 +13,10 @@
         {% for donation in donations %}
         <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
             <div class="glass-card h-100 p-0 overflow-hidden">
-                {% if donation.image %}
-                    <div style="height: 200px; overflow: hidden; position: relative;">
-                        <img src="{{ donation.image.url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ donation.food_name }}">
-                        <span class="badge bg-success position-absolute top-0 end-0 m-3">{{ donation.get_status_display }}</span>
-                    </div>
-                {% else %}
-                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px; position: relative;">
-                        <i class="fa-solid fa-utensils fs-1 text-muted"></i>
-                        <span class="badge bg-success position-absolute top-0 end-0 m-3">{{ donation.get_status_display }}</span>
-                    </div>
-                {% endif %}
+                <div style="height: 200px; overflow: hidden; position: relative;">
+                    <img src="{{ donation.image_url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ donation.food_name }}" onerror="this.onerror=null; this.src='/static/images/food/meals.jpg';">
+                    <span class="badge bg-success position-absolute top-0 end-0 m-3">{{ donation.get_status_display }}</span>
+                </div>
                 <div class="p-4">
                     <h5 class="fw-bold">{{ donation.food_name }}</h5>
                     <p class="text-muted small mb-2"><i class="fa-solid fa-clock me-1"></i> Pickup By: {{ donation.pickup_deadline|date:"M d, Y H:i" }}</p>
@@ -48,7 +41,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body text-center pt-2">
-                            <img src="{{ donation.qr_code.url }}" class="img-fluid rounded shadow-sm mb-3" alt="QR Code">
+                            <img src="{% url 'serve_qr_code' donation.id %}" class="img-fluid rounded shadow-sm mb-3" alt="QR Code" style="max-width: 200px;">
                             <p class="small text-muted mb-0">Show this code to the volunteer when they arrive to pick up the {{ donation.food_name }}.</p>
                         </div>
                     </div>

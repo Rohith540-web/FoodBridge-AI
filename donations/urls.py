@@ -10,5 +10,6 @@ urlpatterns = [
     path('edit/<int:donation_id>/', views.edit_donation, name='edit_donation'),
     path('delete/<int:donation_id>/', views.delete_donation, name='delete_donation'),
     path('qr/<int:donation_id>/', views.generate_qr, name='generate_qr'),
+    path('qr-code/<int:donation_id>/', views.serve_qr_code, name='serve_qr_code'),
     path('track/<int:donation_id>/', views.track_volunteer, name='track_volunteer'),
 ]

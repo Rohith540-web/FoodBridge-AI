@@ -23,7 +23,7 @@
     <div class="col-md-6 col-lg-4 reservation-card" data-status="{{ reservation.donation.status }}" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
         <div class="card h-100 border-0 shadow-sm custom-card overflow-hidden rounded-4">
             <div style="height: 180px; position: relative;">
-                <img src="{{ reservation.donation.image_url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ reservation.donation.food_name }}">
+                <img src="{{ reservation.donation.image_url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ reservation.donation.food_name }}" onerror="this.onerror=null; this.src='/static/images/food/meals.jpg';">
                 <span class="badge {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}bg-warning{% elif reservation.donation.status == 'PICKED_UP' %}bg-info text-dark{% elif reservation.donation.status == 'DELIVERED' %}bg-success{% else %}bg-secondary{% endif %} position-absolute top-0 end-0 m-3 shadow-sm px-3 py-2 rounded-pill">{{ reservation.donation.get_status_display }}</span>
             </div>
             

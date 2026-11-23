@@ -11,7 +11,7 @@
     
     <div class="row g-5">
         <div class="col-md-6">
-            <img src="{{ donation.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" style="object-fit: cover; max-height: 400px;" alt="{{ donation.food_name }}">
+            <img src="{{ donation.image_url }}" class="img-fluid rounded-4 shadow-sm w-100" style="object-fit: cover; max-height: 400px;" alt="{{ donation.food_name }}" onerror="this.onerror=null; this.src='/static/images/food/biryani.jpg';">
             
             <div class="mt-4 p-4 bg-light rounded-4 shadow-sm">
                 <h5 class="fw-bold mb-3"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Pickup Location</h5>
@@ -66,20 +66,18 @@
                 </div>
             </div>
             
-            {% if donation.qr_code %}
             <div class="card border-0 shadow-sm rounded-4 mb-4 text-center p-4">
                 <h5 class="fw-bold mb-1"><i class="fa-solid fa-qrcode text-primary me-2"></i>Pickup Verification QR</h5>
                 <p class="text-muted small mb-3">Scan this QR code during pickup to verify and transfer food.</p>
                 <div class="bg-white p-2 d-inline-block rounded-3 border shadow-sm mx-auto mb-3">
-                    <img src="{{ donation.qr_code.url }}" alt="QR Code" class="img-fluid rounded" style="width: 180px; height: 180px; object-fit: contain;">
+                    <img src="{% url 'serve_qr_code' donation.id %}" alt="QR Code" class="img-fluid rounded" style="width: 180px; height: 180px; object-fit: contain;" onerror="this.onerror=null; this.src='/donations/qr-code/{{ donation.id }}/';">
                 </div>
                 <div>
-                    <a href="{{ donation.qr_code.url }}" download="QR_{{ donation.food_name }}.png" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                    <a href="{% url 'serve_qr_code' donation.id %}" download="QR_{{ donation.food_name }}.png" class="btn btn-outline-primary btn-sm rounded-pill px-4">
                         <i class="fa-solid fa-download me-2"></i>Download QR Code
                     </a>
                 </div>
             </div>
-            {% endif %}
 
             <!-- Reserve Action -->
             <div class="d-grid gap-2">

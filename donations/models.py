@@ -36,7 +36,8 @@ class Donation(models.Model):
     def image_url(self):
         if self.image:
             try:
-                return self.image.url
+                if hasattr(self.image, 'storage') and self.image.storage.exists(self.image.name):
+                    return self.image.url
             except Exception:
                 pass
         cat = (self.category or '').lower()
@@ -45,9 +46,13 @@ class Donation(models.Model):
             return '/static/images/food/bakery.jpg'
         elif 'juice' in name or 'beverag' in cat or 'snack' in cat:
             return '/static/images/food/beverages.jpg'
-        elif 'biryani' in name or 'rice' in name:
+        elif 'biryani' in name or 'briyani' in name or 'rice' in name:
             return '/static/images/food/biryani.jpg'
         return '/static/images/food/meals.jpg'
+
+    @property
+    def qr_code_url(self):
+        return f"/donations/qr-code/{self.id}/"
 
     def __str__(self):
         return f"{self.food_name} by {self.donor.username}"
