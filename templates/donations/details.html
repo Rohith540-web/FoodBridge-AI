@@ -16,6 +16,7 @@
             <div class="mt-4 p-4 bg-light rounded-4 shadow-sm">
                 <h5 class="fw-bold mb-3"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Pickup Location</h5>
                 <p class="text-muted mb-3">{{ donation.pickup_location }}</p>
+                <div id="detailsLocationMap" class="rounded-3 overflow-hidden shadow-sm border mb-3" style="height: 220px; width: 100%;"></div>
                 <a href="https://www.google.com/maps/search/?api=1&query={{ donation.pickup_location|urlencode }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm rounded-pill w-100 shadow-sm py-2">
                     <i class="fa-brands fa-google text-danger me-2"></i>View Location on Google Maps
                 </a>
@@ -95,4 +96,48 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const query = "{{ donation.pickup_location|escapejs }}";
+        const donorLat = {{ donation.donor.latitude|default:'13.0280' }};
+        const donorLng = {{ donation.donor.longitude|default:'80.0163' }};
+
+        const map = L.map('detailsLocationMap', { zoomControl: true }).setView([donorLat, donorLng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap | FoodBridge AI'
+        }).addTo(map);
+
+        const pinIcon = L.divIcon({
+            className: 'custom-details-pin',
+            html: '<div style="background: #e63946; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white;"><i class="fa-solid fa-location-dot fs-6"></i></div>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        let marker = L.marker([donorLat, donorLng], { icon: pinIcon }).addTo(map);
+        marker.bindPopup("<b>{{ donation.food_name|escapejs }}</b><br>{{ donation.pickup_location|escapejs }}").openPopup();
+
+        // Geocode address to update exact location pin if available
+        if (query && query.length > 3) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.length > 0) {
+                        const lat = parseFloat(res[0].lat);
+                        const lng = parseFloat(res[0].lon);
+                        map.setView([lat, lng], 15);
+                        marker.setLatLng([lat, lng]);
+                    }
+                })
+                .catch(() => {});
+        }
+
+        setTimeout(() => { map.invalidateSize(); }, 400);
+    });
+</script>
 {% endblock %}

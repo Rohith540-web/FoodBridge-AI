@@ -68,23 +68,30 @@
                     
                     <hr class="my-4">
                     
-                    <h5 class="fw-bold mb-4">Location</h5>
+                    <h5 class="fw-bold mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Location</h5>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Pickup Location</label>
-                        <div class="input-group">
+                        <div class="input-group mb-2">
                             {{ form.pickup_location }}
-                            <button class="btn btn-outline-primary" type="button"><i class="fa-solid fa-location-crosshairs"></i> Use Live Location</button>
+                            <button class="btn btn-outline-primary" type="button" id="use-live-location-btn">
+                                <i class="fa-solid fa-location-crosshairs me-1"></i> <span id="location-btn-text">Use Live Location</span>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted"><i class="fa-solid fa-circle-info text-primary me-1"></i> Type address, drag pin, or click map to pinpoint.</small>
+                            <span id="coords-badge" class="badge bg-secondary font-monospace" style="font-size: 0.72rem;">Detecting...</span>
                         </div>
                     </div>
                     
-                    <!-- Simulated Google Map -->
-                    <div class="mb-4 rounded-4 overflow-hidden position-relative" style="height: 200px;">
-                        <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center" style="background-image: url('https://developers.google.com/static/maps/images/landing/hero_maps_static_api.png'); background-size: cover; background-position: center;">
-                            <div class="bg-white p-2 rounded-3 shadow-sm d-flex align-items-center">
-                                <i class="fa-solid fa-location-dot text-danger me-2"></i>
-                                <span class="small fw-bold">Map Preview</span>
-                            </div>
+                    <!-- Real Interactive Leaflet / OpenStreetMap Map -->
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-header bg-dark text-white p-2 px-3 border-0 d-flex justify-content-between align-items-center">
+                            <span class="small fw-semibold"><i class="fa-solid fa-map-location-dot text-success me-2"></i>Interactive Pickup Map</span>
+                            <a id="external-google-maps-link" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1" style="font-size: 0.75rem;">
+                                <i class="fa-brands fa-google text-danger me-1"></i>Open in Google Maps
+                            </a>
                         </div>
+                        <div id="pickupMap" style="height: 280px; width: 100%; z-index: 1;"></div>
                     </div>
                     
                     <div class="d-flex gap-3 mt-5">
@@ -129,6 +136,145 @@
                 input.classList.add('form-control');
             }
         });
+
+        // Initialize Real Interactive Pickup Map
+        initPickupMap();
     });
+
+    function initPickupMap() {
+        const defaultLat = {{ user.latitude|default:'13.0280' }};
+        const defaultLng = {{ user.longitude|default:'80.0163' }};
+        
+        const map = L.map('pickupMap', {
+            zoomControl: true,
+            scrollWheelZoom: true
+        }).setView([defaultLat, defaultLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors | FoodBridge AI'
+        }).addTo(map);
+
+        const pinIcon = L.divIcon({
+            className: 'custom-pickup-pin',
+            html: '<div style="background: #e63946; color: white; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 2px solid white;"><i class="fa-solid fa-location-dot fs-6"></i></div>',
+            iconSize: [34, 34],
+            iconAnchor: [17, 34],
+            popupAnchor: [0, -34]
+        });
+
+        let marker = L.marker([defaultLat, defaultLng], {
+            icon: pinIcon,
+            draggable: true
+        }).addTo(map);
+
+        marker.bindPopup("<b>Pickup Location</b><br>Click anywhere or drag me to set location.").openPopup();
+
+        const locationInput = document.querySelector('textarea[name="pickup_location"]') || document.querySelector('input[name="pickup_location"]');
+        const coordsBadge = document.getElementById('coords-badge');
+        const gmapsLink = document.getElementById('external-google-maps-link');
+
+        function updateMarkerPosition(lat, lng, doReverseGeocode = true) {
+            marker.setLatLng([lat, lng]);
+            if (coordsBadge) {
+                coordsBadge.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            }
+            if (gmapsLink) {
+                gmapsLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+            }
+
+            if (doReverseGeocode) {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.display_name && locationInput) {
+                            locationInput.value = data.display_name;
+                            marker.bindPopup(`<b>Pickup Location</b><br>${data.display_name.substring(0, 60)}...`).openPopup();
+                        }
+                    })
+                    .catch(() => {});
+            }
+        }
+
+        updateMarkerPosition(defaultLat, defaultLng, false);
+
+        map.on('click', function(e) {
+            updateMarkerPosition(e.latlng.lat, e.latlng.lng, true);
+        });
+
+        marker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            updateMarkerPosition(pos.lat, pos.lng, true);
+        });
+
+        // "Use Live Location" GPS button
+        const liveBtn = document.getElementById('use-live-location-btn');
+        const btnText = document.getElementById('location-btn-text');
+        if (liveBtn) {
+            liveBtn.addEventListener('click', function() {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser.');
+                    return;
+                }
+                btnText.textContent = 'Locating...';
+                liveBtn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        map.flyTo([lat, lng], 16);
+                        updateMarkerPosition(lat, lng, true);
+                        btnText.textContent = 'Location Set!';
+                        liveBtn.disabled = false;
+                        setTimeout(() => { btnText.textContent = 'Use Live Location'; }, 2500);
+                    },
+                    function(err) {
+                        btnText.textContent = 'Use Live Location';
+                        liveBtn.disabled = false;
+                        alert('Could not access your location. Please check browser permissions.');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            });
+        }
+
+        // Typing in location input geocodes to map
+        if (locationInput) {
+            let typingTimer;
+            const geocodeQuery = function() {
+                const query = locationInput.value.trim();
+                if (query.length > 4) {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results && results.length > 0) {
+                                const lat = parseFloat(results[0].lat);
+                                const lng = parseFloat(results[0].lon);
+                                map.flyTo([lat, lng], 15);
+                                updateMarkerPosition(lat, lng, false);
+                                marker.bindPopup(`<b>${query}</b>`).openPopup();
+                            }
+                        })
+                        .catch(() => {});
+                }
+            };
+
+            locationInput.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(geocodeQuery, 1200);
+            });
+
+            locationInput.addEventListener('blur', geocodeQuery);
+
+            if (locationInput.value.trim().length > 4) {
+                setTimeout(geocodeQuery, 500);
+            }
+        }
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 400);
+    }
 </script>
 {% endblock %}
