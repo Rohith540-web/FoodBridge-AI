@@ -46,12 +46,31 @@
         100% { transform: scale(1.4); opacity: 0; }
     }
     .rescue-map-box {
-        height: 270px;
+        height: 310px;
         width: 100%;
         border-radius: 16px;
         overflow: hidden;
         border: 1px solid rgba(0,0,0,0.08);
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        position: relative;
+    }
+    .leaflet-control-layers {
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18) !important;
+        border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        padding: 6px 10px !important;
+        background: rgba(255, 255, 255, 0.96) !important;
+        backdrop-filter: blur(4px) !important;
+        z-index: 1000 !important;
+    }
+    .leaflet-control-layers-base label {
+        margin-bottom: 3px !important;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
     .custom-card {
         transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -498,11 +517,11 @@ function initRescueMap(id, donorLat, donorLng, foodName, ngoLat, ngoLng, ngoName
             };
 
             L.control.layers({
-                "🗺️ Street": streetLayer,
+                "🗺️ Streets": streetLayer,
                 "🛰️ Satellite": satelliteLayer,
                 "🌐 Google Roads": googleLayer,
                 "🌍 Google Satellite": googleSatLayer
-            }, null, { position: 'topright' }).addTo(map);
+            }, null, { position: 'topright', collapsed: false }).addTo(map);
 
             const donorIcon = L.divIcon({
                 className: '',
