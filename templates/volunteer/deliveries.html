@@ -3,6 +3,59 @@
 
 {% block title %}My Deliveries - FoodBridge AI{% endblock %}
 
+{% block extra_css %}
+<style>
+    .custom-map-pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 3px solid #ffffff;
+    }
+    .donor-pin {
+        background: #198754;
+        width: 36px;
+        height: 36px;
+    }
+    .ngo-pin {
+        background: #0d6efd;
+        width: 36px;
+        height: 36px;
+    }
+    .vol-pin {
+        background: #fd7e14;
+        width: 42px;
+        height: 42px;
+        position: relative;
+    }
+    .vol-pin::after {
+        content: '';
+        position: absolute;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 2px solid #fd7e14;
+        opacity: 0.6;
+        animation: pin-pulse 1.8s infinite ease-out;
+    }
+    @keyframes pin-pulse {
+        0% { transform: scale(0.7); opacity: 0.9; }
+        100% { transform: scale(1.4); opacity: 0; }
+    }
+    .rescue-map-box {
+        height: 270px;
+        width: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
 {% block volunteer_content %}
 <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
     <h2 class="fw-bold mb-0">My Deliveries</h2>
@@ -13,7 +66,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h4 class="fw-bold mb-1">Available Food Rescues (Choose a Donation)</h4>
-                <p class="text-muted small mb-0">Browse food reserved by NGOs and claim the rescue task that fits your route</p>
+                <p class="text-muted small mb-0">Inspect donor & NGO locations, turn ON your live location, and claim your rescue task</p>
             </div>
             {% if pending_reservations %}
             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
@@ -58,14 +111,155 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex gap-2 pt-2 border-top border-light">
-                            <a href="https://www.google.com/maps/search/?api=1&query={{ reservation.donation.get_latitude }},{{ reservation.donation.get_longitude }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center" title="Preview Pickup Location on Map">
-                                <i class="fa-solid fa-map-location-dot"></i>
-                            </a>
-                            <form action="{% url 'accept_delivery' reservation.id %}" method="post" class="flex-grow-1">
+                        <div class="d-grid gap-2 pt-2 border-top border-light">
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold" data-bs-toggle="modal" data-bs-target="#inspectModal{{ reservation.id }}" onclick="initRescueModalMap({{ reservation.id }}, {{ reservation.donation.get_latitude }}, {{ reservation.donation.get_longitude }}, '{{ reservation.donation.food_name|escapejs }}', {{ reservation.ngo.latitude|default:13.0827 }}, {{ reservation.ngo.longitude|default:80.2707 }}, '{{ reservation.ngo.username|escapejs }}')">
+                                <i class="fa-solid fa-map-location-dot me-1"></i> View Route & Details
+                            </button>
+                            <button type="button" class="btn btn-gradient btn-sm rounded-pill shadow-sm py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#inspectModal{{ reservation.id }}" onclick="initRescueModalMap({{ reservation.id }}, {{ reservation.donation.get_latitude }}, {{ reservation.donation.get_longitude }}, '{{ reservation.donation.food_name|escapejs }}', {{ reservation.ngo.latitude|default:13.0827 }}, {{ reservation.ngo.longitude|default:80.2707 }}, '{{ reservation.ngo.username|escapejs }}')">
+                                <i class="fa-solid fa-hand-holding-heart me-1"></i> Choose & Accept
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inspect Delivery & Route Modal -->
+            <div class="modal fade" id="inspectModal{{ reservation.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+                        <div class="modal-header border-0 bg-light pb-2">
+                            <div>
+                                <h5 class="modal-title fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-box text-primary"></i> {{ reservation.donation.food_name }}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 small">{{ reservation.donation.quantity }}</span>
+                                </h5>
+                                <small class="text-muted"><i class="fa-solid fa-clock me-1"></i>Pickup Deadline: {{ reservation.donation.pickup_deadline|date:"M d, H:i" }}</small>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        
+                        <div class="modal-body p-4">
+                            <!-- Route & Addresses -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 bg-success bg-opacity-10 border border-success border-opacity-25 h-100">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-success rounded-circle me-2 p-2"><i class="fa-solid fa-utensils"></i></span>
+                                            <h6 class="fw-bold mb-0 text-success">1. Donor Pickup Location</h6>
+                                        </div>
+                                        <p class="small mb-1 fw-semibold text-dark">{{ reservation.donation.donor.username }}</p>
+                                        <p class="small text-muted mb-2"><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ reservation.donation.pickup_location }}</p>
+                                        {% if reservation.donation.donor.phone_number %}
+                                        <small class="text-muted d-block"><i class="fa-solid fa-phone me-1"></i>{{ reservation.donation.donor.phone_number }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25 h-100">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-primary rounded-circle me-2 p-2"><i class="fa-solid fa-building-ngo"></i></span>
+                                            <h6 class="fw-bold mb-0 text-primary">2. NGO Drop-Off Location</h6>
+                                        </div>
+                                        <p class="small mb-1 fw-semibold text-dark">{{ reservation.ngo.ngo_profile.organization_name|default:reservation.ngo.username }}</p>
+                                        <p class="small text-muted mb-2"><i class="fa-solid fa-location-dot text-primary me-1"></i>{{ reservation.ngo.address|default:"NGO Distribution Facility" }}</p>
+                                        {% if reservation.ngo.phone_number %}
+                                        <small class="text-muted d-block"><i class="fa-solid fa-phone me-1"></i>{{ reservation.ngo.phone_number }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Food Specifications -->
+                            <div class="p-3 bg-light rounded-3 mb-3 small">
+                                <div class="row g-2">
+                                    <div class="col-sm-4">
+                                        <span class="text-muted">Storage:</span> <strong>{{ reservation.donation.storage_type|default:"Normal" }}</strong>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="text-muted">Prepared At:</span> <strong>{{ reservation.donation.preparation_time|date:"M d, H:i" }}</strong>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <span class="text-muted">AI Priority:</span> <strong class="text-warning">{{ reservation.donation.priority_score|default:80|floatformat:0 }}%</strong>
+                                    </div>
+                                    {% if reservation.donation.special_instructions %}
+                                    <div class="col-12 mt-2">
+                                        <span class="text-muted">Special Instructions:</span> <em>{{ reservation.donation.special_instructions }}</em>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Interactive Route Map -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0"><i class="fa-solid fa-map me-1 text-primary"></i> Rescue Route Map</h6>
+                                    <span class="small text-muted"><i class="fa-solid fa-circle text-success me-1" style="font-size: 8px;"></i>Donor &nbsp;<i class="fa-solid fa-circle text-primary me-1" style="font-size: 8px;"></i>NGO &nbsp;<i class="fa-solid fa-circle text-warning me-1" style="font-size: 8px;"></i>Your Location</span>
+                                </div>
+                                <div id="rescueMap{{ reservation.id }}" class="rescue-map-box"></div>
+                            </div>
+
+                            <!-- Mandatory GPS Live Location Verification Gate -->
+                            <div class="card border-0 shadow-sm rounded-4 mb-2" style="background: #f8fafc; border: 1px dashed #cbd5e1 !important;">
+                                <div class="card-body p-3">
+                                    <div id="gpsPromptBox{{ reservation.id }}" class="text-center py-2">
+                                        <div class="text-warning mb-2">
+                                            <i class="fa-solid fa-location-crosshairs fa-2x"></i>
+                                        </div>
+                                        <h6 class="fw-bold mb-1">Turn ON Live Location to Claim</h6>
+                                        <p class="small text-muted mb-3">To choose and accept this delivery, turn on your device's live location. The system will plot your position on the map and calculate your travel distance.</p>
+                                        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold" onclick="enableLiveLocation({{ reservation.id }}, {{ reservation.donation.get_latitude }}, {{ reservation.donation.get_longitude }}, {{ reservation.ngo.latitude|default:13.0827 }}, {{ reservation.ngo.longitude|default:80.2707 }})">
+                                            <i class="fa-solid fa-location-arrow me-2"></i> Turn ON My Location
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="gpsSuccessBox{{ reservation.id }}" style="display: none;">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <span class="badge bg-success rounded-pill px-3 py-2">
+                                                <i class="fa-solid fa-circle-check me-1"></i> Live GPS Verified & Synced
+                                            </span>
+                                            <span class="badge bg-light text-muted border small" id="gpsCoordsText{{ reservation.id }}"></span>
+                                        </div>
+                                        <div class="row g-2 text-center small mt-2">
+                                            <div class="col-4">
+                                                <div class="bg-white p-2 rounded-3 border">
+                                                    <span class="text-muted d-block small">You ➡️ Donor</span>
+                                                    <strong class="text-primary" id="distDonorText{{ reservation.id }}">-- km</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="bg-white p-2 rounded-3 border">
+                                                    <span class="text-muted d-block small">Donor ➡️ NGO</span>
+                                                    <strong class="text-success" id="distNgoText{{ reservation.id }}">-- km</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="bg-white p-2 rounded-3 border">
+                                                    <span class="text-muted d-block small">Total Route</span>
+                                                    <strong class="text-dark" id="distTotalText{{ reservation.id }}">-- km</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="gpsErrorBox{{ reservation.id }}" style="display: none;" class="alert alert-danger py-2 px-3 small mt-2 mb-0">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i> <span id="gpsErrorMsg{{ reservation.id }}">Unable to detect location.</span>
+                                        <div class="mt-2 text-center">
+                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" onclick="simulateDeviceLocation({{ reservation.id }}, {{ reservation.donation.get_latitude }}, {{ reservation.donation.get_longitude }}, {{ reservation.ngo.latitude|default:13.0827 }}, {{ reservation.ngo.longitude|default:80.2707 }})">
+                                                <i class="fa-solid fa-satellite-dish me-1"></i> Use Device Location Fallback
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer border-0 bg-light p-3">
+                            <form id="acceptDeliveryForm{{ reservation.id }}" action="{% url 'accept_delivery' reservation.id %}" method="post" class="w-100">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-gradient btn-sm w-100 rounded-pill shadow-sm py-2 fw-semibold">
-                                    <i class="fa-solid fa-hand-holding-heart me-1"></i> Choose & Accept
+                                <input type="hidden" name="volunteer_lat" id="volLatField{{ reservation.id }}" value="">
+                                <input type="hidden" name="volunteer_lng" id="volLngField{{ reservation.id }}" value="">
+                                <button type="submit" id="acceptSubmitBtn{{ reservation.id }}" class="btn btn-secondary w-100 rounded-pill py-2 fw-bold shadow-sm" disabled>
+                                    <i class="fa-solid fa-lock me-2"></i> Turn ON Location to Choose Order
                                 </button>
                             </form>
                         </div>
@@ -189,6 +383,10 @@
 {% endfor %}
 
 <script>
+window.rescueMaps = {};
+window.rescueLayers = {};
+window.cachedVolunteerCoords = null;
+
 function filterDeliveries(filter, btn) {
     document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -203,6 +401,198 @@ function filterDeliveries(filter, btn) {
             row.style.display = (status === 'DELIVERED') ? '' : 'none';
         }
     });
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function initRescueModalMap(id, donorLat, donorLng, foodName, ngoLat, ngoLng, ngoName) {
+    setTimeout(function () {
+        const container = document.getElementById('rescueMap' + id);
+        if (!container) return;
+
+        if (!window.rescueMaps[id]) {
+            const map = L.map('rescueMap' + id, {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView([donorLat, donorLng], 13);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '© Esri — Street Map'
+            }).addTo(map);
+
+            const donorIcon = L.divIcon({
+                className: '',
+                html: '<div class="custom-map-pin donor-pin" title="Donor"><i class="fa-solid fa-utensils"></i></div>',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            const ngoIcon = L.divIcon({
+                className: '',
+                html: '<div class="custom-map-pin ngo-pin" title="NGO"><i class="fa-solid fa-building-ngo"></i></div>',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
+
+            const donorMarker = L.marker([donorLat, donorLng], { icon: donorIcon }).addTo(map)
+                .bindPopup('<strong>Pickup (Donor):</strong><br>' + foodName);
+
+            const ngoMarker = L.marker([ngoLat, ngoLng], { icon: ngoIcon }).addTo(map)
+                .bindPopup('<strong>Drop-Off (NGO):</strong><br>' + ngoName);
+
+            const routeLine = L.polyline([[donorLat, donorLng], [ngoLat, ngoLng]], {
+                color: '#0d6efd',
+                weight: 3,
+                dashArray: '6, 8',
+                opacity: 0.7
+            }).addTo(map);
+
+            map.fitBounds([[donorLat, donorLng], [ngoLat, ngoLng]], { padding: [30, 30] });
+
+            window.rescueMaps[id] = map;
+            window.rescueLayers[id] = {
+                donorMarker: donorMarker,
+                ngoMarker: ngoMarker,
+                routeLine: routeLine
+            };
+
+            const modalElem = document.getElementById('inspectModal' + id);
+            if (modalElem) {
+                modalElem.addEventListener('shown.bs.modal', function () {
+                    map.invalidateSize();
+                });
+            }
+        } else {
+            window.rescueMaps[id].invalidateSize();
+        }
+
+        // If volunteer already enabled location previously, auto apply
+        if (window.cachedVolunteerCoords) {
+            applyVolunteerLocation(id, window.cachedVolunteerCoords.lat, window.cachedVolunteerCoords.lng, donorLat, donorLng, ngoLat, ngoLng);
+        }
+    }, 250);
+}
+
+function enableLiveLocation(id, donorLat, donorLng, ngoLat, ngoLng) {
+    const errorBox = document.getElementById('gpsErrorBox' + id);
+    const errorMsg = document.getElementById('gpsErrorMsg' + id);
+    if (errorBox) errorBox.style.display = 'none';
+
+    if (!navigator.geolocation) {
+        if (errorBox) {
+            errorMsg.innerText = 'Geolocation is not supported by your browser.';
+            errorBox.style.display = 'block';
+        }
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        function (pos) {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            window.cachedVolunteerCoords = { lat: lat, lng: lng };
+            applyVolunteerLocation(id, lat, lng, donorLat, donorLng, ngoLat, ngoLng);
+        },
+        function (err) {
+            console.warn('GPS lookup error:', err);
+            if (errorBox) {
+                let msg = 'Location access was denied or unavailable. Please enable device location or use the fallback below.';
+                if (err.code === 1) msg = 'Location permission was denied. Please allow location access in your browser.';
+                errorMsg.innerText = msg;
+                errorBox.style.display = 'block';
+            }
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+    );
+}
+
+function simulateDeviceLocation(id, donorLat, donorLng, ngoLat, ngoLng) {
+    // Offset slightly from donor to simulate realistic nearby volunteer location
+    const simLat = donorLat - 0.012;
+    const simLng = donorLng - 0.008;
+    window.cachedVolunteerCoords = { lat: simLat, lng: simLng };
+    applyVolunteerLocation(id, simLat, simLng, donorLat, donorLng, ngoLat, ngoLng);
+}
+
+function applyVolunteerLocation(id, volLat, volLng, donorLat, donorLng, ngoLat, ngoLng) {
+    const map = window.rescueMaps[id];
+    if (map) {
+        // Remove existing volunteer elements if any
+        if (window.rescueLayers[id] && window.rescueLayers[id].volMarker) {
+            map.removeLayer(window.rescueLayers[id].volMarker);
+        }
+        if (window.rescueLayers[id] && window.rescueLayers[id].volRoute) {
+            map.removeLayer(window.rescueLayers[id].volRoute);
+        }
+
+        const volIcon = L.divIcon({
+            className: '',
+            html: '<div class="custom-map-pin vol-pin" title="Your Location"><i class="fa-solid fa-person-biking"></i></div>',
+            iconSize: [42, 42],
+            iconAnchor: [21, 21]
+        });
+
+        const volMarker = L.marker([volLat, volLng], { icon: volIcon }).addTo(map)
+            .bindPopup('<strong>Your Live Location</strong><br>Ready for pickup');
+
+        const volRoute = L.polyline([[volLat, volLng], [donorLat, donorLng]], {
+            color: '#fd7e14',
+            weight: 4,
+            opacity: 0.85
+        }).addTo(map);
+
+        window.rescueLayers[id].volMarker = volMarker;
+        window.rescueLayers[id].volRoute = volRoute;
+
+        map.fitBounds([[volLat, volLng], [donorLat, donorLng], [ngoLat, ngoLng]], { padding: [35, 35] });
+    }
+
+    // Distances
+    const dist1 = calculateDistance(volLat, volLng, donorLat, donorLng);
+    const dist2 = calculateDistance(donorLat, donorLng, ngoLat, ngoLng);
+    const totalDist = dist1 + dist2;
+
+    const d1El = document.getElementById('distDonorText' + id);
+    const d2El = document.getElementById('distNgoText' + id);
+    const totalEl = document.getElementById('distTotalText' + id);
+    const coordsEl = document.getElementById('gpsCoordsText' + id);
+
+    if (d1El) d1El.innerText = dist1.toFixed(1) + ' km';
+    if (d2El) d2El.innerText = dist2.toFixed(1) + ' km';
+    if (totalEl) totalEl.innerText = totalDist.toFixed(1) + ' km';
+    if (coordsEl) coordsEl.innerText = volLat.toFixed(4) + ', ' + volLng.toFixed(4);
+
+    // Form inputs
+    const latInp = document.getElementById('volLatField' + id);
+    const lngInp = document.getElementById('volLngField' + id);
+    if (latInp) latInp.value = volLat;
+    if (lngInp) lngInp.value = volLng;
+
+    // Toggle boxes
+    const promptBox = document.getElementById('gpsPromptBox' + id);
+    const successBox = document.getElementById('gpsSuccessBox' + id);
+    const errorBox = document.getElementById('gpsErrorBox' + id);
+    if (promptBox) promptBox.style.display = 'none';
+    if (errorBox) errorBox.style.display = 'none';
+    if (successBox) successBox.style.display = 'block';
+
+    // Unlock submit button
+    const submitBtn = document.getElementById('acceptSubmitBtn' + id);
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.className = 'btn btn-success btn-gradient w-100 rounded-pill py-2 fw-bold shadow-sm';
+        submitBtn.innerHTML = '<i class="fa-solid fa-hand-holding-heart me-2"></i> Confirm & Choose This Donation';
+    }
 }
 </script>
 

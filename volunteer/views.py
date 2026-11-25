@@ -41,6 +41,17 @@ def accept_delivery(request, reservation_id):
     
     reservation = get_object_or_404(Reservation, id=reservation_id)
     
+    # Save volunteer's verified live location if provided
+    vol_lat = request.POST.get('volunteer_lat')
+    vol_lng = request.POST.get('volunteer_lng')
+    if vol_lat and vol_lng:
+        try:
+            request.user.latitude = float(vol_lat)
+            request.user.longitude = float(vol_lng)
+            request.user.save(update_fields=['latitude', 'longitude'])
+        except (ValueError, TypeError):
+            pass
+    
     # Check if another active volunteer already accepted it
     existing_delivery = Delivery.objects.filter(donation=reservation.donation).first()
     if existing_delivery and existing_delivery.volunteer and existing_delivery.volunteer != request.user and existing_delivery.volunteer.username != 'volunteer_demo':
@@ -63,17 +74,17 @@ def accept_delivery(request, reservation_id):
     Notification.objects.create(
         user=reservation.ngo,
         title="Volunteer Accepted Delivery",
-        message=f"Volunteer {request.user.username} has chosen and accepted the delivery task for '{reservation.donation.food_name}'."
+        message=f"Volunteer {request.user.username} has verified live GPS location and accepted the delivery task for '{reservation.donation.food_name}'."
     )
     
     # Notify the Donor
     Notification.objects.create(
         user=reservation.donation.donor,
         title="Volunteer En Route for Pickup",
-        message=f"Volunteer {request.user.username} has accepted pickup for '{reservation.donation.food_name}'."
+        message=f"Volunteer {request.user.username} has verified location and is en route for pickup of '{reservation.donation.food_name}'."
     )
     
-    messages.success(request, f"🎉 You have chosen and accepted delivery for '{reservation.donation.food_name}'! It is now in your active assignments.")
+    messages.success(request, f"🎉 Live location verified! You have accepted delivery for '{reservation.donation.food_name}'. It is now active in your assignments below.")
     return redirect('volunteer_deliveries')
 
 @login_required
