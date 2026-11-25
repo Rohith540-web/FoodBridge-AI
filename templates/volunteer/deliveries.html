@@ -173,9 +173,21 @@
 
                         <!-- Route Map -->
                         <div class="mb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                                 <strong class="small text-dark"><i class="fa-solid fa-map me-1 text-primary"></i> Route Map</strong>
-                                <span class="small text-muted" style="font-size: 0.75rem;">
+                                <div class="d-flex align-items-center gap-1">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" style="font-size: 0.72rem;" onclick="switchMapLayer({{ reservation.id }}, 'street')">🗺️ Street</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" style="font-size: 0.72rem;" onclick="switchMapLayer({{ reservation.id }}, 'sat')">🛰️ Satellite</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-xs py-0 px-2" style="font-size: 0.72rem;" onclick="switchMapLayer({{ reservation.id }}, 'google')">🌐 Google</button>
+                                    </div>
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ reservation.donation.get_latitude }},{{ reservation.donation.get_longitude }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-xs py-0 px-2 rounded-pill shadow-sm" style="font-size: 0.72rem;" title="Open in Google Maps">
+                                        <i class="fa-brands fa-google me-1"></i>Maps
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mb-1">
+                                <span class="small text-muted" style="font-size: 0.72rem;">
                                     <i class="fa-solid fa-circle text-success me-1"></i>Donor &nbsp;
                                     <i class="fa-solid fa-circle text-primary me-1"></i>NGO &nbsp;
                                     <i class="fa-solid fa-circle text-warning me-1"></i>You
@@ -367,7 +379,29 @@
 <script>
 window.rescueMaps = {};
 window.rescueLayers = {};
+window.rescueTileLayers = {};
 window.cachedVolunteerCoords = null;
+
+function switchMapLayer(id, type) {
+    const map = window.rescueMaps[id];
+    const layers = window.rescueTileLayers[id];
+    if (!map || !layers) return;
+
+    if (layers.street && map.hasLayer(layers.street)) map.removeLayer(layers.street);
+    if (layers.satellite && map.hasLayer(layers.satellite)) map.removeLayer(layers.satellite);
+    if (layers.google && map.hasLayer(layers.google)) map.removeLayer(layers.google);
+    if (layers.googleSat && map.hasLayer(layers.googleSat)) map.removeLayer(layers.googleSat);
+
+    if (type === 'sat') {
+        layers.satellite.addTo(map);
+    } else if (type === 'google') {
+        layers.google.addTo(map);
+    } else if (type === 'googleSat') {
+        layers.googleSat.addTo(map);
+    } else {
+        layers.street.addTo(map);
+    }
+}
 
 function filterDeliveries(filter, btn) {
     document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
@@ -432,10 +466,43 @@ function initRescueMap(id, donorLat, donorLng, foodName, ngoLat, ngoLng, ngoName
                 scrollWheelZoom: false
             }).setView([donorLat, donorLng], 13);
 
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            const streetLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
                 attribution: '© Esri — Street Map'
-            }).addTo(map);
+            });
+
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '© Esri — Satellite'
+            });
+
+            const googleLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '© Google Maps'
+            });
+
+            const googleSatLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '© Google Satellite'
+            });
+
+            streetLayer.addTo(map);
+
+            window.rescueTileLayers[id] = {
+                street: streetLayer,
+                satellite: satelliteLayer,
+                google: googleLayer,
+                googleSat: googleSatLayer
+            };
+
+            L.control.layers({
+                "🗺️ Street": streetLayer,
+                "🛰️ Satellite": satelliteLayer,
+                "🌐 Google Roads": googleLayer,
+                "🌍 Google Satellite": googleSatLayer
+            }, null, { position: 'topright' }).addTo(map);
 
             const donorIcon = L.divIcon({
                 className: '',
