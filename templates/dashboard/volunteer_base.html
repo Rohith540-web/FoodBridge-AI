@@ -34,16 +34,71 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    /* Always-active sidebar styles for volunteer portal */
+    .sidebar {
+        min-height: calc(100vh - 76px);
+        background: #1e293b !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        position: sticky;
+        top: 76px;
+        z-index: 100;
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.15) !important;
+    }
+    .volunteer-profile-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 18px 12px;
+        margin: 0 12px 24px 12px;
+        text-align: center;
+    }
+    .sidebar-link {
+        display: flex !important;
+        align-items: center !important;
+        padding: 0.85rem 1.4rem !important;
+        color: #94a3b8 !important;
+        text-decoration: none !important;
+        font-weight: 500 !important;
+        font-size: 0.92rem !important;
+        transition: all 0.2s ease !important;
+        border-radius: 0 50px 50px 0 !important;
+        margin-right: 1rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+    .sidebar-link i {
+        width: 24px !important;
+        margin-right: 12px !important;
+        font-size: 1.05rem !important;
+    }
+    .sidebar-link:hover {
+        background-color: rgba(16, 185, 129, 0.15) !important;
+        color: #34d399 !important;
+        font-weight: 600 !important;
+        transform: translateX(4px);
+    }
+    .sidebar-link.active {
+        background: linear-gradient(90deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.06)) !important;
+        color: #34d399 !important;
+        font-weight: 700 !important;
+        border-left: 4px solid #10b981 !important;
+    }
+    .sidebar-link.text-danger:hover {
+        background-color: rgba(239, 68, 68, 0.15) !important;
+        color: #ef4444 !important;
+    }
+</style>
+
 <div class="container-fluid p-0">
     <div class="row g-0 pt-5 mt-4">
         <!-- Sidebar -->
-        <div class="col-md-2 sidebar d-none d-md-block pt-4 shadow-sm z-3">
-            <div class="mb-4 px-4 text-center">
-                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block pt-4 shadow-sm z-3">
+            <div class="volunteer-profile-card">
+                <div class="bg-success bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border: 2px solid rgba(52, 211, 153, 0.4);">
                     <i class="fa-solid fa-motorcycle text-success fs-3"></i>
                 </div>
-                <h6 class="fw-bold mb-0 text-truncate">{{ user.username }}</h6>
-                <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Volunteer Account</small>
+                <h6 class="fw-bold mb-1 text-white text-truncate">{{ user.username }}</h6>
+                <span class="badge bg-success bg-opacity-20 text-success rounded-pill px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">VOLUNTEER</span>
             </div>
             
             <nav class="nav flex-column">
@@ -53,7 +108,7 @@
                 <a class="sidebar-link {% if request.resolver_match.url_name == 'volunteer_deliveries' %}active{% endif %}" href="{% url 'volunteer_deliveries' %}">
                     <i class="fa-solid fa-boxes-stacked"></i> My Deliveries
                 </a>
-                <a class="sidebar-link" href="{% url 'notification_list' %}">
+                <a class="sidebar-link {% if request.resolver_match.url_name == 'notification_list' %}active{% endif %}" href="{% url 'notification_list' %}">
                     <i class="fa-solid fa-bell"></i> Notifications
                 </a>
                 <a class="sidebar-link" href="#">
@@ -72,7 +127,7 @@
         </div>
         
         <!-- Main Content -->
-        <div class="col-md-10 bg-light pb-5" style="min-height: calc(100vh - 76px);">
+        <div class="col-md-9 col-lg-10 bg-light pb-5" style="min-height: calc(100vh - 76px);">
             <div class="p-4 p-md-5">
                 {% if messages %}
                     {% for message in messages %}
