@@ -52,6 +52,7 @@
         padding: 18px 12px;
         margin: 0 12px 24px 12px;
         text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     .sidebar-link {
         display: flex !important;
@@ -90,15 +91,15 @@
 </style>
 
 <div class="container-fluid p-0">
-    <div class="row g-0 pt-5 mt-4">
+    <div class="row g-0">
         <!-- Sidebar -->
         <div class="col-md-3 col-lg-2 sidebar d-none d-md-block pt-4 shadow-sm z-3">
             <div class="volunteer-profile-card">
-                <div class="bg-success bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border: 2px solid rgba(52, 211, 153, 0.4);">
-                    <i class="fa-solid fa-motorcycle text-success fs-3"></i>
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2 shadow" style="width: 58px; height: 58px; background: linear-gradient(135deg, #10b981, #059669); border: 2px solid rgba(255, 255, 255, 0.25);">
+                    <i class="fa-solid fa-motorcycle text-white fs-4"></i>
                 </div>
                 <h6 class="fw-bold mb-1 text-white text-truncate">{{ user.username }}</h6>
-                <span class="badge bg-success bg-opacity-20 text-success rounded-pill px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">VOLUNTEER</span>
+                <span class="badge rounded-pill px-3 py-1 text-white text-uppercase" style="background: #10b981; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.8px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);">VOLUNTEER</span>
             </div>
             
             <nav class="nav flex-column">
