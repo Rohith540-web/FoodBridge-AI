@@ -178,9 +178,9 @@ record("Donation status changed to RESERVED", donation.status == 'RESERVED', f"S
 reservation = Reservation.objects.filter(donation=donation, ngo=ngo).first()
 record("Reservation created in DB", reservation is not None, f"Reservation ID: {reservation.id if reservation else 'None'}")
 
-# Check auto-assigned delivery
-delivery = Delivery.objects.filter(donation=donation).first()
-record("Delivery auto-assigned to Volunteer", delivery is not None and delivery.status == 'ASSIGNED', f"Volunteer: {delivery.volunteer.username if delivery else 'None'}")
+# Check donation is open for volunteer choice on rescue board
+delivery_before = Delivery.objects.filter(donation=donation).first()
+record("Donation open on Volunteer Rescue Board", delivery_before is None, "Waiting for volunteer to choose")
 
 # Check donor notification
 donor_notif = Notification.objects.filter(user=donor, title="Food Reserved!").order_by('-created_at').first()
@@ -199,7 +199,7 @@ client.logout()
 # ---------------------------------------------------------------------
 # 5. VOLUNTEER FLOW
 # ---------------------------------------------------------------------
-vol = delivery.volunteer
+vol = CustomUser.objects.filter(role='VOLUNTEER', is_active=True).exclude(username='volunteer_demo').first() or CustomUser.objects.filter(role='VOLUNTEER', is_active=True).first()
 login_ok = client.login(username=vol.username, password='Pass@1234')
 record("Volunteer Login", login_ok, f"Logged in as {vol.username}")
 
@@ -208,6 +208,11 @@ record("Volunteer Dashboard renders", resp.status_code == 200 and b'Dashboard' i
 
 resp = client.get('/volunteer/deliveries/')
 record("Volunteer Deliveries page renders", resp.status_code == 200, f"Status: {resp.status_code}")
+
+# Volunteer chooses and accepts the reserved donation
+resp = client.post(f'/volunteer/accept/{reservation.id}/')
+delivery = Delivery.objects.filter(donation=donation, volunteer=vol).first()
+record("Volunteer chose and claimed delivery", delivery is not None and delivery.status == 'ASSIGNED', f"Volunteer: {delivery.volunteer.username if delivery else 'None'}")
 
 resp = client.get(f'/volunteer/navigation/{delivery.id}/')
 record("Volunteer Navigation page renders", resp.status_code == 200, f"Status: {resp.status_code}")

@@ -10,28 +10,65 @@
 
 <div class="row g-4 mb-5" data-aos="fade-up">
     <div class="col-12">
-        <h4 class="fw-bold mb-3">Available for Pickup</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">Available Food Rescues (Choose a Donation)</h4>
+                <p class="text-muted small mb-0">Browse food reserved by NGOs and claim the rescue task that fits your route</p>
+            </div>
+            {% if pending_reservations %}
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                <i class="fa-solid fa-bell me-1"></i> {{ pending_reservations|length }} Rescue{{ pending_reservations|length|pluralize }} Ready
+            </span>
+            {% endif %}
+        </div>
+        
         <div class="row g-4">
             {% for reservation in pending_reservations %}
             <div class="col-md-6 col-lg-4">
                 <div class="card h-100 border-0 shadow-sm custom-card overflow-hidden rounded-4">
-                    <div class="bg-warning bg-opacity-10 p-3 d-flex justify-content-between align-items-center border-bottom border-warning border-opacity-25">
-                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i> Waiting for Pickup</span>
-                        <span class="fw-bold text-primary">{{ reservation.donation.quantity }}</span>
+                    <div style="height: 150px; position: relative;" class="overflow-hidden bg-light">
+                        <img src="{{ reservation.donation.image_url }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ reservation.donation.food_name }}" onerror="this.onerror=null; this.src='/static/images/food/meals.jpg';">
+                        <span class="badge bg-dark bg-opacity-75 text-white position-absolute top-0 start-0 m-2 px-2 py-1 rounded-pill small">
+                            <i class="fa-solid fa-utensils me-1"></i>{{ reservation.donation.category }}
+                        </span>
+                        {% if reservation.donation.priority_score %}
+                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2 px-2 py-1 rounded-pill small fw-bold shadow-sm">
+                            <i class="fa-solid fa-bolt me-1"></i>AI: {{ reservation.donation.priority_score|floatformat:0 }}%
+                        </span>
+                        {% endif %}
                     </div>
                     
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3">{{ reservation.donation.food_name }}</h5>
-                        
-                        <div class="mb-4">
-                            <p class="text-muted small mb-2"><i class="fa-solid fa-shop text-danger me-2"></i><strong>From:</strong> {{ reservation.donation.pickup_location }}</p>
-                            <p class="text-muted small mb-0 text-truncate"><i class="fa-solid fa-building-ngo text-success me-2"></i><strong>To:</strong> {{ reservation.ngo.username }}</p>
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 text-truncate" title="{{ reservation.donation.food_name }}">{{ reservation.donation.food_name }}</h5>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-1 small fw-semibold">{{ reservation.donation.quantity }}</span>
+                            </div>
+                            
+                            <div class="mb-3 small">
+                                <p class="text-muted mb-1 text-truncate" title="{{ reservation.donation.pickup_location }}">
+                                    <i class="fa-solid fa-location-dot text-danger me-2"></i><strong>Pickup:</strong> {{ reservation.donation.pickup_location }}
+                                </p>
+                                <p class="text-muted mb-1 text-truncate" title="{{ reservation.ngo.username }}">
+                                    <i class="fa-solid fa-building-ngo text-success me-2"></i><strong>Deliver To:</strong> NGO {{ reservation.ngo.username }}
+                                </p>
+                                <p class="text-muted mb-0">
+                                    <i class="fa-solid fa-clock text-warning me-2"></i><strong>Deadline:</strong> {{ reservation.donation.pickup_deadline|date:"M d, H:i" }}
+                                </p>
+                            </div>
                         </div>
                         
-                        <form action="{% url 'accept_delivery' reservation.id %}" method="post">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-gradient btn-sm w-100 rounded-pill shadow-sm">Accept Delivery</button>
-                        </form>
+                        <div class="d-flex gap-2 pt-2 border-top border-light">
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ reservation.donation.get_latitude }},{{ reservation.donation.get_longitude }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center justify-content-center" title="Preview Pickup Location on Map">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </a>
+                            <form action="{% url 'accept_delivery' reservation.id %}" method="post" class="flex-grow-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-gradient btn-sm w-100 rounded-pill shadow-sm py-2 fw-semibold">
+                                    <i class="fa-solid fa-hand-holding-heart me-1"></i> Choose & Accept
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -39,7 +76,7 @@
             <div class="col-12 text-center text-muted p-5 bg-white rounded-4 shadow-sm border border-light">
                 <i class="fa-solid fa-check-circle fs-1 mb-3 text-success opacity-75"></i>
                 <h5 class="fw-bold">All caught up!</h5>
-                <p class="mb-0">There are no pending reservations waiting for a volunteer right now.</p>
+                <p class="mb-0">There are no pending reservations waiting for a volunteer right now. When NGOs reserve food, new rescue tasks will appear here for you to choose!</p>
             </div>
             {% endfor %}
         </div>

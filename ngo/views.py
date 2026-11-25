@@ -38,26 +38,36 @@ def reserve_donation(request, donation_id):
         donation.status = 'RESERVED'  # Fixed: was invalid 'ASSIGNED'
         donation.save()
         
-        # Auto-assign to an active volunteer, preferring active user volunteers
-        real_vol = CustomUser.objects.filter(role='VOLUNTEER', is_active=True).exclude(username='volunteer_demo').first()
-        volunteer = real_vol or CustomUser.objects.filter(role='VOLUNTEER', is_active=True).first()
-        if volunteer:
-            Delivery.objects.create(volunteer=volunteer, donation=donation, status='ASSIGNED')
-            Notification.objects.create(
-                user=volunteer,
-                title="New Delivery Assigned!",
-                message=f"You have been assigned to deliver '{donation.food_name}' to NGO {request.user.username}."
-            )
+        # Check if NGO directly assigned a specific volunteer
+        chosen_vol_id = request.POST.get('volunteer_id')
+        if chosen_vol_id:
+            chosen_vol = CustomUser.objects.filter(id=chosen_vol_id, role='VOLUNTEER', is_active=True).first()
+            if chosen_vol:
+                Delivery.objects.create(volunteer=chosen_vol, donation=donation, status='ASSIGNED')
+                Notification.objects.create(
+                    user=chosen_vol,
+                    title="New Delivery Assigned!",
+                    message=f"NGO {request.user.username} has directly assigned you to deliver '{donation.food_name}'."
+                )
             
         # Notify the donor
         Notification.objects.create(
             user=donation.donor,
             title="Food Reserved!",
-            message=f"Your donation '{donation.food_name}' has been reserved by {request.user.username}. A volunteer has been assigned to pick it up."
+            message=f"Your donation '{donation.food_name}' has been reserved by {request.user.username}. Waiting for a volunteer to choose and accept pickup."
         )
-        
+
+        # Notify active volunteers that a new rescue task is available to claim
+        active_volunteers = CustomUser.objects.filter(role='VOLUNTEER', is_active=True)
+        for vol in active_volunteers:
+            Notification.objects.create(
+                user=vol,
+                title="New Food Rescue Available!",
+                message=f"'{donation.food_name}' ({donation.quantity}) at {donation.pickup_location[:35]} is available for pickup. Claim this delivery now!"
+            )
+            
         from django.contrib import messages
-        messages.success(request, f"Successfully reserved '{donation.food_name}'. A volunteer is on the way.")
+        messages.success(request, f"Successfully reserved '{donation.food_name}'. It is now open on the Volunteer Rescue Board for volunteers to choose!")
         return redirect('ngo_reservations')
         
     return redirect('ngo_map_view')
@@ -106,12 +116,60 @@ def cancel_reservation(request, reservation_id):
 
 
 @login_required
+def assign_volunteer(request, reservation_id):
+    if request.user.role != 'NGO':
+        return redirect('dashboard_home')
+        
+    from users.models import CustomUser
+    from volunteer.models import Delivery
+    from notifications.models import Notification
+    
+    reservation = get_object_or_404(Reservation, id=reservation_id, ngo=request.user)
+    if request.method == 'POST':
+        volunteer_id = request.POST.get('volunteer_id')
+        if volunteer_id == 'unassign' or not volunteer_id:
+            # Release back to open pool
+            if hasattr(reservation.donation, 'delivery'):
+                old_vol = reservation.donation.delivery.volunteer
+                reservation.donation.delivery.delete()
+                if old_vol:
+                    Notification.objects.create(
+                        user=old_vol,
+                        title="Delivery Assignment Released",
+                        message=f"The delivery task for '{reservation.donation.food_name}' was released back to the open volunteer board."
+                    )
+            messages.success(request, f"'{reservation.donation.food_name}' is now open on the Volunteer Rescue Board for any volunteer to choose.")
+        else:
+            vol = get_object_or_404(CustomUser, id=volunteer_id, role='VOLUNTEER', is_active=True)
+            delivery, created = Delivery.objects.get_or_create(
+                donation=reservation.donation,
+                defaults={'volunteer': vol, 'status': 'ASSIGNED'}
+            )
+            if not created:
+                delivery.volunteer = vol
+                delivery.status = 'ASSIGNED'
+                delivery.save()
+                
+            Notification.objects.create(
+                user=vol,
+                title="Delivery Assigned by NGO",
+                message=f"NGO {request.user.username} has assigned you to deliver '{reservation.donation.food_name}'."
+            )
+            messages.success(request, f"Assigned volunteer '{vol.username}' to deliver '{reservation.donation.food_name}'.")
+    return redirect('ngo_reservations')
+
+@login_required
 def my_reservations(request):
     if request.user.role != 'NGO':
         return redirect('dashboard_home')
         
+    from users.models import CustomUser
     reservations = Reservation.objects.filter(ngo=request.user).order_by('-reserved_at')
-    return render(request, 'ngo/reservations.html', {'reservations': reservations})
+    active_volunteers = CustomUser.objects.filter(role='VOLUNTEER', is_active=True).exclude(username='volunteer_demo')
+    return render(request, 'ngo/reservations.html', {
+        'reservations': reservations,
+        'active_volunteers': active_volunteers
+    })
 
 @login_required
 def confirm_pickup(request, donation_id):

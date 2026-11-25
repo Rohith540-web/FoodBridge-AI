@@ -31,7 +31,21 @@
                 <h5 class="fw-bold mb-3 text-truncate">{{ reservation.donation.food_name }}</h5>
                 <p class="text-muted small mb-2"><i class="fa-solid fa-box text-primary me-2"></i>{{ reservation.donation.quantity }}</p>
                 <p class="text-muted small mb-2"><i class="fa-solid fa-clock text-primary me-2"></i>Reserved At: {{ reservation.reserved_at|date:"M d, H:i" }}</p>
-                <p class="text-muted small mb-4 text-truncate"><i class="fa-solid fa-location-dot text-primary me-2"></i>{{ reservation.donation.pickup_location }}</p>
+                <p class="text-muted small mb-3 text-truncate"><i class="fa-solid fa-location-dot text-primary me-2"></i>{{ reservation.donation.pickup_location }}</p>
+                
+                <!-- Volunteer Status Badge -->
+                {% if reservation.donation.delivery and reservation.donation.delivery.volunteer %}
+                    <div class="alert alert-info py-2 px-3 small rounded-3 mb-3 d-flex align-items-center justify-content-between">
+                        <div class="text-truncate">
+                            <i class="fa-solid fa-person-biking text-primary me-2"></i><strong>Volunteer:</strong> {{ reservation.donation.delivery.volunteer.username }}
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ reservation.donation.delivery.get_status_display }}</span>
+                    </div>
+                {% elif reservation.donation.status != 'DELIVERED' %}
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mb-3">
+                        <i class="fa-solid fa-hand-holding-heart text-warning me-2"></i><strong>Rescue Board:</strong> Open for Volunteers to Choose
+                    </div>
+                {% endif %}
                 
                 <div class="d-grid gap-2">
                     {% if reservation.donation.status == 'DELIVERED' %}
@@ -44,17 +58,65 @@
                             </a>
                         </div>
                     {% elif reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' or reservation.donation.status == 'IN_TRANSIT' or reservation.donation.status == 'PICKED_UP' %}
-                        <a href="{% url 'ngo_track_volunteer' reservation.donation.id %}" class="btn btn-outline-primary btn-sm rounded-pill"><i class="fa-solid fa-map-location-dot me-2"></i>Track Volunteer</a>
-                        <a href="{% url 'ngo_qr_scanner' reservation.donation.id %}" class="btn btn-gradient btn-sm rounded-pill"><i class="fa-solid fa-qrcode me-2"></i>QR Verification</a>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'ngo_track_volunteer' reservation.donation.id %}" class="btn btn-outline-primary btn-sm rounded-pill flex-fill"><i class="fa-solid fa-map-location-dot me-1"></i>Track</a>
+                            <a href="{% url 'ngo_qr_scanner' reservation.donation.id %}" class="btn btn-gradient btn-sm rounded-pill flex-fill"><i class="fa-solid fa-qrcode me-1"></i>QR Verify</a>
+                        </div>
                         {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}
-                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill mt-1" data-bs-toggle="modal" data-bs-target="#cancelModal{{ reservation.id }}">
-                            <i class="fa-solid fa-xmark me-1"></i>Cancel Reservation
-                        </button>
+                        <div class="d-flex gap-2 mt-1">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill flex-fill" data-bs-toggle="modal" data-bs-target="#assignModal{{ reservation.id }}">
+                                <i class="fa-solid fa-user-plus me-1"></i>Assign Volunteer
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill flex-fill" data-bs-toggle="modal" data-bs-target="#cancelModal{{ reservation.id }}">
+                                <i class="fa-solid fa-xmark me-1"></i>Cancel
+                            </button>
+                        </div>
                         {% endif %}
                     {% else %}
                         <span class="badge bg-warning text-dark rounded-pill px-3 py-2">Waiting for Volunteer</span>
                     {% endif %}
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign / Change Volunteer Modal -->
+    {% if reservation.donation.status == 'RESERVED' or reservation.donation.status == 'ASSIGNED' %}
+    <div class="modal fade" id="assignModal{{ reservation.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow-lg p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-user-gear me-2"></i>Volunteer Assignment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{% url 'assign_volunteer' reservation.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="modal-body py-3">
+                        <p class="small text-muted mb-3">You can directly assign a registered volunteer or leave this task open on the volunteer rescue board for volunteers to choose.</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Select Volunteer Option</label>
+                            <select name="volunteer_id" class="form-select rounded-3">
+                                <option value="unassign" {% if not reservation.donation.delivery or not reservation.donation.delivery.volunteer %}selected{% endif %}>
+                                    📢 Open for Any Volunteer to Choose (Rescue Board)
+                                </option>
+                                {% for vol in active_volunteers %}
+                                <option value="{{ vol.id }}" {% if reservation.donation.delivery and reservation.donation.delivery.volunteer.id == vol.id %}selected{% endif %}>
+                                    👤 {{ vol.username }} {% if vol.phone_number %}({{ vol.phone_number }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 d-flex justify-content-end gap-2 pt-0 pb-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Update Assignment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
             </div>
         </div>
     </div>
