@@ -139,15 +139,71 @@ def admin_users(request):
     if not (request.user.is_superuser or request.user.is_staff):
         return redirect('dashboard_home')
 
-    users = CustomUser.objects.exclude(is_superuser=True).order_by('-date_joined')
+    users = CustomUser.objects.exclude(is_superuser=True).select_related(
+        'donor_profile', 'ngo_profile', 'volunteer_profile'
+    ).order_by('-date_joined')
     donors = users.filter(role='DONOR')
     ngos = users.filter(role='NGO')
     volunteers = users.filter(role='VOLUNTEER')
+
+    import json
+    users_map_data = []
+    for u in users:
+        lat = u.latitude
+        lng = u.longitude
+        if not lat or not lng:
+            addr = (u.address or '').lower()
+            if 'thiruvallur' in addr or 'tiruvallur' in addr:
+                lat, lng = 13.1433, 79.9079
+            elif 'saveetha' in addr or 'thandalam' in addr:
+                lat, lng = 13.0280, 80.0163
+            elif 'sriperumbudur' in addr:
+                lat, lng = 12.9675, 79.9439
+            elif 'mannur' in addr:
+                lat, lng = 13.0199, 79.9880
+            elif 'chennai' in addr or 'madras' in addr or 'mgr nagar' in addr:
+                lat, lng = 13.0827, 80.2707
+            else:
+                if u.role == 'DONOR':
+                    lat, lng = 13.0827, 80.2707
+                elif u.role == 'NGO':
+                    lat, lng = 13.0500, 80.2300
+                elif u.role == 'VOLUNTEER':
+                    lat, lng = 13.0289, 80.0191
+                else:
+                    lat, lng = 13.0827, 80.2707
+
+        details = ""
+        org_name = ""
+        if u.role == 'DONOR' and hasattr(u, 'donor_profile'):
+            org_name = u.donor_profile.organization_name or u.username
+            details = f"Org: {org_name} | Type: {u.donor_profile.donor_type} | FSL: {u.donor_profile.food_safety_license or 'Verified'}"
+        elif u.role == 'NGO' and hasattr(u, 'ngo_profile'):
+            org_name = u.ngo_profile.organization_name or u.username
+            details = f"Org: {org_name} | Reg: {u.ngo_profile.registration_number or 'N/A'} | Area: {u.ngo_profile.service_area or 'General'}"
+        elif u.role == 'VOLUNTEER' and hasattr(u, 'volunteer_profile'):
+            details = f"Vehicle: {u.volunteer_profile.vehicle_type or 'Bike'} | Trust: {u.volunteer_profile.trust_score}% | Deliveries: {u.volunteer_profile.successful_deliveries}"
+
+        users_map_data.append({
+            'id': u.id,
+            'username': u.username,
+            'org_name': org_name,
+            'email': u.email,
+            'phone': u.phone_number or 'Not provided',
+            'role': u.role,
+            'address': u.address or 'Address not specified',
+            'lat': float(lat),
+            'lng': float(lng),
+            'is_active': u.is_active,
+            'details': details,
+            'date_joined': u.date_joined.strftime('%b %d, %Y'),
+        })
 
     context = {
         'donors': donors,
         'ngos': ngos,
         'volunteers': volunteers,
+        'users_map_json': json.dumps(users_map_data),
     }
     return render(request, 'dashboard/admin_users.html', context)
 
@@ -185,15 +241,74 @@ def admin_deliveries(request):
 
     active_deliveries = Delivery.objects.filter(
         status__in=['ASSIGNED', 'IN_TRANSIT']
+    ).select_related(
+        'volunteer', 'volunteer__volunteer_profile',
+        'donation', 'donation__donor', 'donation__donor__donor_profile',
+        'donation__reservation', 'donation__reservation__ngo', 'donation__reservation__ngo__ngo_profile'
     ).order_by('-assigned_at')
 
     completed_deliveries = Delivery.objects.filter(
         status='DELIVERED'
+    ).select_related(
+        'volunteer',
+        'donation', 'donation__donor',
+        'donation__reservation', 'donation__reservation__ngo'
     ).order_by('-delivered_at')
+
+    import json
+    tracking_data = []
+    for d in active_deliveries:
+        vol_lat = d.volunteer.latitude if d.volunteer and d.volunteer.latitude else 13.0289
+        vol_lng = d.volunteer.longitude if d.volunteer and d.volunteer.longitude else 80.0191
+
+        donor_lat = d.donation.get_latitude
+        donor_lng = d.donation.get_longitude
+
+        ngo_user = getattr(getattr(d.donation, 'reservation', None), 'ngo', None)
+        ngo_lat = (ngo_user.latitude if ngo_user and ngo_user.latitude else 13.0500)
+        ngo_lng = (ngo_user.longitude if ngo_user and ngo_user.longitude else 80.2300)
+
+        vol_profile = getattr(d.volunteer, 'volunteer_profile', None)
+        donor_profile = getattr(d.donation.donor, 'donor_profile', None)
+        ngo_profile = getattr(ngo_user, 'ngo_profile', None) if ngo_user else None
+
+        tracking_data.append({
+            'delivery_id': d.id,
+            'food_name': d.donation.food_name,
+            'quantity': d.donation.quantity,
+            'status': d.status,
+            'status_display': d.get_status_display(),
+            'assigned_at': d.assigned_at.strftime('%b %d, %H:%M') if d.assigned_at else 'Recent',
+            'volunteer': {
+                'username': d.volunteer.username,
+                'phone': d.volunteer.phone_number or 'N/A',
+                'lat': float(vol_lat),
+                'lng': float(vol_lng),
+                'vehicle': getattr(vol_profile, 'vehicle_type', 'Bike') or 'Bike',
+                'trust_score': getattr(vol_profile, 'trust_score', 100),
+            },
+            'donor': {
+                'username': d.donation.donor.username,
+                'org': getattr(donor_profile, 'organization_name', '') or d.donation.donor.username,
+                'pickup_location': d.donation.pickup_location or 'Pickup Address',
+                'phone': d.donation.donor.phone_number or 'N/A',
+                'lat': float(donor_lat),
+                'lng': float(donor_lng),
+            },
+            'ngo': {
+                'username': ngo_user.username if ngo_user else 'NGO Center',
+                'org': getattr(ngo_profile, 'organization_name', '') if ngo_profile else (ngo_user.username if ngo_user else 'NGO Center'),
+                'address': ngo_user.address if ngo_user and ngo_user.address else 'NGO Dropoff Center',
+                'phone': ngo_user.phone_number if ngo_user and ngo_user.phone_number else 'N/A',
+                'lat': float(ngo_lat),
+                'lng': float(ngo_lng),
+            }
+        })
 
     context = {
         'deliveries': active_deliveries,
         'completed_deliveries': completed_deliveries,
+        'tracking_json': json.dumps(tracking_data),
     }
     return render(request, 'dashboard/admin_deliveries.html', context)
 

@@ -1,44 +1,113 @@
 {% extends 'dashboard/admin_base.html' %}
 
-{% block title %}Live Deliveries - FoodBridge AI{% endblock %}
+{% block title %}Live Deliveries &amp; GPS Tracking - FoodBridge AI{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .live-map-pin {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #fff;
+        font-weight: bold;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+        border: 2px solid #ffffff;
+    }
+    .donor-pin { background: #10b981; width: 36px; height: 36px; }
+    .ngo-pin { background: #0d6efd; width: 36px; height: 36px; }
+    .vol-live-pin {
+        background: #f59e0b;
+        width: 42px;
+        height: 42px;
+        position: relative;
+    }
+    .vol-live-pin::after {
+        content: '';
+        position: absolute;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        border: 2px solid #f59e0b;
+        opacity: 0.7;
+        animation: live-radar-pulse 1.8s infinite ease-out;
+    }
+    @keyframes live-radar-pulse {
+        0% { transform: scale(0.7); opacity: 0.9; }
+        100% { transform: scale(1.4); opacity: 0; }
+    }
+    
+    #liveTrackingMap {
+        height: 560px;
+        width: 100%;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    .leaflet-control-layers {
+        border-radius: 12px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18) !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        padding: 8px 12px !important;
+        background: rgba(255, 255, 255, 0.96) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+</style>
+{% endblock %}
 
 {% block admin_content %}
 <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
-    <h2 class="fw-bold mb-0">Live Deliveries</h2>
+    <div>
+        <h2 class="fw-bold mb-1">Live Rescue Tracking Radar</h2>
+        <p class="text-muted small mb-0">Real-time GPS tracking of active volunteer deliveries, donor pickups, and NGO drop-off centers</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 fw-semibold">
+            <i class="fa-solid fa-satellite-dish me-1"></i> Live Radar Active
+        </span>
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="location.reload()">
+            <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh
+        </button>
+    </div>
 </div>
 
 <div class="row g-4">
-    <!-- Map Area -->
-    <div class="col-md-8" data-aos="fade-up">
-        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden position-relative">
-            <!-- Simulated Global Map Background -->
-            <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center" style="background-image: url('https://developers.google.com/static/maps/images/landing/hero_maps_static_api.png'); background-size: cover; background-position: center; min-height: 500px;">
-                
-                <!-- Mock Markers for Active Deliveries -->
-                {% for d in deliveries %}
-                    {% if d.status == 'IN_TRANSIT' %}
-                    <div class="position-absolute" style="top: {{ forloop.counter|add:20 }}%; left: {{ forloop.counter|add:30 }}%; transform: translate(-50%, -50%);">
-                        <div class="position-relative animation-bounce">
-                            <i class="fa-solid fa-motorcycle text-primary fs-3 drop-shadow" style="filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.4));"></i>
-                            <div class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.5rem;">Live</div>
-                        </div>
-                    </div>
-                    {% endif %}
-                {% endfor %}
+    <!-- Live Map Area -->
+    <div class="col-lg-8" data-aos="fade-up">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="small fw-bold text-dark"><i class="fa-solid fa-route text-primary me-2"></i>Live Multi-Vehicle Radar</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-2 py-1 small">
+                        {{ deliveries.count }} Active Rescues
+                    </span>
+                </div>
+                <div class="small text-muted d-flex gap-3">
+                    <span><i class="fa-solid fa-motorcycle text-warning me-1"></i>Volunteer</span>
+                    <span><i class="fa-solid fa-shop text-success me-1"></i>Donor</span>
+                    <span><i class="fa-solid fa-building-ngo text-primary me-1"></i>NGO</span>
+                </div>
+            </div>
+            
+            <div class="card-body p-2 position-relative">
+                <div id="liveTrackingMap" class="shadow-inner border"></div>
 
                 {% if not deliveries %}
-                    <div class="bg-white p-4 rounded-4 shadow-lg text-center" style="max-width: 300px; opacity: 0.95;">
-                        <i class="fa-solid fa-satellite-dish text-secondary fs-1 mb-3"></i>
-                        <h5 class="fw-bold">No Active Tracking</h5>
-                        <p class="text-muted small mb-0">There are currently no volunteers in transit.</p>
+                <div class="position-absolute top-50 start-50 translate-middle bg-white p-4 rounded-4 shadow-lg text-center border" style="max-width: 340px; z-index: 1000; opacity: 0.95;">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px;">
+                        <i class="fa-solid fa-satellite-dish fs-3"></i>
                     </div>
+                    <h5 class="fw-bold mb-1">Radar Standby</h5>
+                    <p class="text-muted small mb-0">No active volunteer rescues are in transit at the moment. As soon as a volunteer accepts a delivery, live GPS tracking will render here automatically.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
     
-    <!-- Deliveries List -->
-    <div class="col-md-4" data-aos="fade-left">
+    <!-- Deliveries Control Sidebar -->
+    <div class="col-lg-4" data-aos="fade-left">
         <div class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-header bg-white border-bottom p-3">
                 <ul class="nav nav-pills nav-fill" id="deliveryTabs" role="tablist">
@@ -57,44 +126,54 @@
             <div class="card-body p-0">
                 <div class="tab-content" id="deliveryTabsContent">
                     <!-- Active Deliveries Tab -->
-                    <div class="tab-pane fade show active" id="active-deliveries" role="tabpanel" style="max-height: 500px; overflow-y: auto;">
+                    <div class="tab-pane fade show active" id="active-deliveries" role="tabpanel" style="max-height: 520px; overflow-y: auto;">
                         {% for d in deliveries %}
-                        <div class="p-4 border-bottom">
+                        <div class="p-3 border-bottom hover-shadow transition">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="fw-bold mb-0 text-truncate" style="max-width: 70%;">{{ d.donation.food_name }}</h6>
-                                <span class="badge {% if d.status == 'IN_TRANSIT' %}bg-primary{% else %}bg-warning text-dark{% endif %} rounded-pill" style="font-size: 0.7rem;">{{ d.get_status_display }}</span>
+                                <h6 class="fw-bold mb-0 text-truncate text-dark" style="max-width: 65%;">{{ d.donation.food_name }}</h6>
+                                <span class="badge {% if d.status == 'IN_TRANSIT' %}bg-primary{% else %}bg-warning text-dark{% endif %} rounded-pill px-2 py-1" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-circle-dot fa-fade me-1"></i>{{ d.get_status_display }}
+                                </span>
                             </div>
                             
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
-                                    <i class="fa-solid fa-motorcycle text-muted small"></i>
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                        <i class="fa-solid fa-motorcycle small"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-dark fw-bold">{{ d.volunteer.username }}</small>
+                                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ d.volunteer.phone_number|default:"No phone" }}</small>
+                                    </div>
                                 </div>
-                                <small class="text-muted fw-bold">{{ d.volunteer.username }}</small>
+                                <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1" style="font-size: 0.72rem;" onclick="focusDeliveryRoute({{ d.id }})">
+                                    <i class="fa-solid fa-crosshairs me-1"></i>Focus Route
+                                </button>
                             </div>
                             
-                            <div class="small">
+                            <div class="small bg-light p-2 rounded-3 border">
                                 <div class="d-flex mb-1">
-                                    <i class="fa-solid fa-shop text-danger mt-1 me-2" style="width: 15px;"></i>
-                                    <span class="text-muted text-truncate">{{ d.donation.pickup_location }}</span>
+                                    <i class="fa-solid fa-shop text-success mt-1 me-2" style="width: 14px;"></i>
+                                    <span class="text-muted text-truncate">From: {{ d.donation.donor.username }} ({{ d.donation.pickup_location }})</span>
                                 </div>
                                 <div class="d-flex">
-                                    <i class="fa-solid fa-building-ngo text-success mt-1 me-2" style="width: 15px;"></i>
-                                    <span class="text-muted text-truncate">{{ d.donation.reservation.ngo.username }} Center</span>
+                                    <i class="fa-solid fa-building-ngo text-primary mt-1 me-2" style="width: 14px;"></i>
+                                    <span class="text-muted text-truncate">To: {{ d.donation.reservation.ngo.username }} Center</span>
                                 </div>
                             </div>
                         </div>
                         {% empty %}
                         <div class="p-5 text-center text-muted">
                             <i class="fa-solid fa-box-open fs-1 mb-3 opacity-25"></i>
-                            <p class="mb-0">No active deliveries at the moment.</p>
+                            <p class="mb-0">No active deliveries on the road right now.</p>
                         </div>
                         {% endfor %}
                     </div>
 
                     <!-- Completed Deliveries Tab -->
-                    <div class="tab-pane fade" id="completed-deliveries" role="tabpanel" style="max-height: 500px; overflow-y: auto;">
+                    <div class="tab-pane fade" id="completed-deliveries" role="tabpanel" style="max-height: 520px; overflow-y: auto;">
                         {% for d in completed_deliveries %}
-                        <div class="p-4 border-bottom bg-light bg-opacity-25">
+                        <div class="p-3 border-bottom bg-light bg-opacity-25">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <h6 class="fw-bold mb-0 text-truncate" style="max-width: 65%;">{{ d.donation.food_name }}</h6>
                                 <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.7rem;">
@@ -109,22 +188,12 @@
                                     </div>
                                     <small class="text-dark fw-bold">{{ d.volunteer.username }}</small>
                                 </div>
-                                <small class="text-muted" style="font-size: 0.75rem;"><i class="fa-regular fa-clock me-1"></i>{{ d.delivered_at|date:"M d, H:i" }}</small>
+                                <small class="text-muted" style="font-size: 0.72rem;"><i class="fa-regular fa-clock me-1"></i>{{ d.delivered_at|date:"M d, H:i" }}</small>
                             </div>
                             
                             <div class="small">
-                                <div class="d-flex mb-1">
-                                    <i class="fa-solid fa-box text-primary mt-1 me-2" style="width: 15px;"></i>
-                                    <span class="text-muted">{{ d.donation.quantity }}</span>
-                                </div>
-                                <div class="d-flex mb-1">
-                                    <i class="fa-solid fa-shop text-muted mt-1 me-2" style="width: 15px;"></i>
-                                    <span class="text-muted text-truncate">From: {{ d.donation.donor.username }}</span>
-                                </div>
-                                <div class="d-flex">
-                                    <i class="fa-solid fa-building-ngo text-success mt-1 me-2" style="width: 15px;"></i>
-                                    <span class="text-muted text-truncate">To: {{ d.donation.reservation.ngo.username }}</span>
-                                </div>
+                                <div class="text-muted"><i class="fa-solid fa-box text-primary me-1"></i>{{ d.donation.quantity }}</div>
+                                <div class="text-muted text-truncate"><i class="fa-solid fa-shop text-muted me-1"></i>{{ d.donation.donor.username }} ➔ {{ d.donation.reservation.ngo.username }}</div>
                             </div>
                         </div>
                         {% empty %}
@@ -146,8 +215,8 @@
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
             <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
                 <div>
-                    <h5 class="fw-bold mb-1"><i class="fa-solid fa-circle-check text-success me-2"></i>Completed Deliveries History</h5>
-                    <small class="text-muted">All food rescue operations that have been successfully delivered</small>
+                    <h5 class="fw-bold mb-1"><i class="fa-solid fa-circle-check text-success me-2"></i>Completed Deliveries Audit History</h5>
+                    <small class="text-muted">All food rescue operations verified and completed with donor, volunteer, and NGO details</small>
                 </div>
                 <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-bold">
                     {{ completed_deliveries.count }} Rescues Completed
@@ -158,10 +227,10 @@
                     <thead class="bg-light text-muted small text-uppercase">
                         <tr>
                             <th class="ps-4 py-3">Food Item &amp; Quantity</th>
-                            <th class="py-3">Donor</th>
+                            <th class="py-3">Donor &amp; Pickup Address</th>
                             <th class="py-3">NGO Recipient</th>
                             <th class="py-3">Volunteer</th>
-                            <th class="py-3">Delivered At</th>
+                            <th class="py-3">Delivered Timestamp</th>
                             <th class="pe-4 py-3 text-end">Status</th>
                         </tr>
                     </thead>
@@ -174,17 +243,23 @@
                             </td>
                             <td class="py-3">
                                 <div class="fw-semibold text-dark">{{ d.donation.donor.username }}</div>
-                                <small class="text-muted text-truncate d-block" style="max-width: 180px;">{{ d.donation.pickup_location }}</small>
+                                <small class="text-muted text-truncate d-block" style="max-width: 220px;">
+                                    <i class="fa-solid fa-location-dot text-danger me-1"></i>{{ d.donation.pickup_location }}
+                                </small>
                             </td>
                             <td class="py-3">
                                 <div class="fw-semibold text-success"><i class="fa-solid fa-building-ngo me-1"></i>{{ d.donation.reservation.ngo.username }}</div>
+                                <small class="text-muted text-truncate d-block" style="max-width: 180px;">{{ d.donation.reservation.ngo.address|default:"NGO Center" }}</small>
                             </td>
                             <td class="py-3">
                                 <div class="d-flex align-items-center">
                                     <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
                                         <i class="fa-solid fa-motorcycle small"></i>
                                     </div>
-                                    <span class="fw-semibold text-dark">{{ d.volunteer.username }}</span>
+                                    <div>
+                                        <span class="fw-semibold text-dark">{{ d.volunteer.username }}</span>
+                                        <small class="text-muted d-block" style="font-size: 0.72rem;">{{ d.volunteer.phone_number|default:"No phone" }}</small>
+                                    </div>
                                 </div>
                             </td>
                             <td class="py-3 text-muted small">
@@ -200,8 +275,8 @@
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-5 text-muted">
-                                <i class="fa-solid fa-circle-check fs-2 mb-3 text-muted opacity-50"></i>
-                                <p class="mb-0">No deliveries have reached DELIVERED status yet.</p>
+                                <i class="fa-solid fa-clipboard-check fs-1 mb-3 opacity-25"></i>
+                                <p class="mb-0">No completed deliveries on record.</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -212,14 +287,157 @@
     </div>
 </div>
 
-<style>
-    .animation-bounce {
-        animation: bounce 2s infinite;
+<script>
+    const activeTrackingData = {{ tracking_json|safe }};
+    let trackingMap = null;
+    let deliveryRouteLayers = {};
+
+    document.addEventListener("DOMContentLoaded", function () {
+        initTrackingRadar();
+    });
+
+    function initTrackingRadar() {
+        const mapContainer = document.getElementById('liveTrackingMap');
+        if (!mapContainer) return;
+
+        // Base tile layers
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        });
+        const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri'
+        });
+        const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: '© Google Maps'
+        });
+        const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: '© Google Maps Satellite'
+        });
+
+        trackingMap = L.map('liveTrackingMap', {
+            center: [13.0827, 80.2707],
+            zoom: 12,
+            layers: [osm]
+        });
+
+        const baseLayers = {
+            "🗺️ Streets (OSM)": osm,
+            "🛰️ Satellite (Esri)": esriSat,
+            "🌐 Google Roads": googleStreets,
+            "🌍 Google Satellite": googleSat
+        };
+        L.control.layers(baseLayers, null, { position: 'topright', collapsed: false }).addTo(trackingMap);
+
+        const allBounds = L.latLngBounds();
+
+        activeTrackingData.forEach(d => {
+            const routeGroup = L.featureGroup();
+
+            // 1. Volunteer Icon
+            const volIcon = L.divIcon({
+                className: '',
+                html: `<div class="live-map-pin vol-live-pin"><i class="fa-solid fa-motorcycle fs-5"></i></div>`,
+                iconSize: [42, 42],
+                iconAnchor: [21, 21],
+                popupAnchor: [0, -21]
+            });
+            const volMarker = L.marker([d.volunteer.lat, d.volunteer.lng], { icon: volIcon });
+            volMarker.bindPopup(`
+                <div style="min-width: 220px; font-family: 'Inter', sans-serif;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong><i class="fa-solid fa-motorcycle text-warning me-1"></i>${d.volunteer.username}</strong>
+                        <span class="badge bg-warning text-dark">${d.status_display}</span>
+                    </div>
+                    <div class="small text-muted mb-1">Vehicle: <strong>${d.volunteer.vehicle}</strong></div>
+                    <div class="small text-muted mb-1"><i class="fa-solid fa-phone me-1"></i>${d.volunteer.phone}</div>
+                    <div class="small p-1 bg-light rounded border">
+                        Rescuing: <strong>${d.food_name}</strong> (${d.quantity})
+                    </div>
+                </div>
+            `);
+            routeGroup.addLayer(volMarker);
+            allBounds.extend([d.volunteer.lat, d.volunteer.lng]);
+
+            // 2. Donor Icon
+            const donorIcon = L.divIcon({
+                className: '',
+                html: `<div class="live-map-pin donor-pin"><i class="fa-solid fa-shop"></i></div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+            });
+            const donorMarker = L.marker([d.donor.lat, d.donor.lng], { icon: donorIcon });
+            donorMarker.bindPopup(`
+                <div style="min-width: 200px; font-family: 'Inter', sans-serif;">
+                    <div class="text-success fw-bold mb-1"><i class="fa-solid fa-shop me-1"></i>Donor: ${d.donor.org}</div>
+                    <div class="small text-muted mb-1"><i class="fa-solid fa-location-dot text-danger me-1"></i>${d.donor.pickup_location}</div>
+                    <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>${d.donor.phone}</div>
+                </div>
+            `);
+            routeGroup.addLayer(donorMarker);
+            allBounds.extend([d.donor.lat, d.donor.lng]);
+
+            // 3. NGO Icon
+            const ngoIcon = L.divIcon({
+                className: '',
+                html: `<div class="live-map-pin ngo-pin"><i class="fa-solid fa-building-ngo"></i></div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18],
+                popupAnchor: [0, -18]
+            });
+            const ngoMarker = L.marker([d.ngo.lat, d.ngo.lng], { icon: ngoIcon });
+            ngoMarker.bindPopup(`
+                <div style="min-width: 200px; font-family: 'Inter', sans-serif;">
+                    <div class="text-primary fw-bold mb-1"><i class="fa-solid fa-building-ngo me-1"></i>NGO: ${d.ngo.org}</div>
+                    <div class="small text-muted mb-1"><i class="fa-solid fa-location-dot text-primary me-1"></i>${d.ngo.address}</div>
+                    <div class="small text-muted"><i class="fa-solid fa-phone me-1"></i>${d.ngo.phone}</div>
+                </div>
+            `);
+            routeGroup.addLayer(ngoMarker);
+            allBounds.extend([d.ngo.lat, d.ngo.lng]);
+
+            // 4. Connecting Lines:
+            // Volunteer to Donor (dashed orange)
+            const leg1 = L.polyline([[d.volunteer.lat, d.volunteer.lng], [d.donor.lat, d.donor.lng]], {
+                color: '#f59e0b',
+                weight: 4,
+                opacity: 0.85,
+                dashArray: '8, 8'
+            });
+            routeGroup.addLayer(leg1);
+
+            // Donor to NGO (solid green glowing)
+            const leg2 = L.polyline([[d.donor.lat, d.donor.lng], [d.ngo.lat, d.ngo.lng]], {
+                color: '#10b981',
+                weight: 4,
+                opacity: 0.95
+            });
+            routeGroup.addLayer(leg2);
+
+            routeGroup.addTo(trackingMap);
+            deliveryRouteLayers[d.delivery_id] = {
+                group: routeGroup,
+                volMarker: volMarker,
+                bounds: routeGroup.getBounds()
+            };
+        });
+
+        if (activeTrackingData.length > 0 && allBounds.isValid()) {
+            trackingMap.fitBounds(allBounds, { padding: [50, 50], maxZoom: 14 });
+        }
     }
-    @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-10px); }
-        60% { transform: translateY(-5px); }
+
+    function focusDeliveryRoute(deliveryId) {
+        if (!trackingMap || !deliveryRouteLayers[deliveryId]) return;
+        const target = deliveryRouteLayers[deliveryId];
+        trackingMap.fitBounds(target.bounds, { padding: [60, 60], maxZoom: 15 });
+        setTimeout(() => {
+            target.volMarker.openPopup();
+        }, 300);
     }
-</style>
+</script>
 {% endblock %}
