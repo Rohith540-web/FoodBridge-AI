@@ -300,32 +300,38 @@
         const mapContainer = document.getElementById('liveTrackingMap');
         if (!mapContainer) return;
 
-        // Base tile layers
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+        // Base tile layers (Using reliable Esri & Carto tiles to prevent OSM 403 rate-limiting)
+        const esriStreets = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Esri, DeLorme, NAVTEQ',
+            maxZoom: 19
         });
         const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: 'Tiles &copy; Esri'
+            attribution: 'Esri, Maxar, Earthstar Geographics',
+            maxZoom: 19
         });
-        const googleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            attribution: '© Google Maps'
+        const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
         });
-        const googleSat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
-            attribution: '© Google Maps Satellite'
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        });
+        const googleSat = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         });
 
         trackingMap = L.map('liveTrackingMap', {
             center: [13.0827, 80.2707],
             zoom: 12,
-            layers: [osm]
+            layers: [esriStreets]
         });
 
         const baseLayers = {
-            "🗺️ Streets (OSM)": osm,
+            "🗺️ Streets (Esri)": esriStreets,
+            "🧭 Carto Clean": cartoVoyager,
             "🛰️ Satellite (Esri)": esriSat,
             "🌐 Google Roads": googleStreets,
             "🌍 Google Satellite": googleSat
